@@ -19,6 +19,7 @@ struct Player {
     nums: HashMap<String, Position>,
     rows: [[bool; 5]; 5],
     cols: [[bool; 5]; 5],
+    won: bool,
 }
 
 impl Player {
@@ -28,6 +29,7 @@ impl Player {
             nums: HashMap::with_capacity(num_capacity),
             rows: [[false; 5]; 5],
             cols: [[false; 5]; 5],
+            won: false,
         }
     }
 
@@ -42,17 +44,20 @@ impl Player {
         }
     }
 
+    fn printit(&self) {
+       for i in 0..5 {
+           println!("{:?}", self.rows[i]);
+       }
+    }
+
     fn play(&mut self, num: String) -> bool {
-        if self.nums.contains_key(&num) {
+        if self.nums.contains_key(&num) && !self.won {
             //println!("{} found in {}", num, self.id);
             match self.nums.get(&num) {
                 Some(Position{ row, col }) => { 
                     println!("{} => row:{} col:{}", self.id, row, col);
                     self.rows[*row][*col] = true;
                     self.cols[*col][*row] = true;
-                    for i in 0..5 {
-                        println!("{:?}", self.rows[i]);
-                    }
                     //let num_val = num.parse::<u32>().unwrap();
                     let mut all = true;
                     for a in self.rows[*row] {
@@ -60,6 +65,7 @@ impl Player {
                     }
                     if all {
                         println!("{}", num);
+                        self.won = true;
                         return true;
                     }
                     all = true;
@@ -68,6 +74,7 @@ impl Player {
                     }
                     if all {
                         println!("{}", num);
+                        self.won = true;
                         return true;
                     }
                     return false;
@@ -95,10 +102,12 @@ impl Game {
     fn play(&mut self) {
         for num in &self.numbers {
             println!("Playing {}", num);
-            for player in &mut self.players {
+            for i in 0..=self.players.len() - 1 {
+                let mut player = &mut self.players[i];
                 if player.play(num.to_string()) {
                     println!("Player {} won!", player.id);
-                    return;
+                    player.printit();
+                    // return;
                 }
             }
             println!();
