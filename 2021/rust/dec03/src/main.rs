@@ -1,16 +1,75 @@
-fn convert(bits: &[u8]) -> u8 {
-    let mut result: u8 = 0;
-    bits.iter().for_each(|&bit| {
-        result <<= 1;
-        result ^= bit;
-    });
-    result
-}
-
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::fs::File;
 
+fn array_len(f: File) -> usize {
+    let mut reader = BufReader::new(f);
+    let mut line = String::new();
+    let len = reader.read_line(&mut line);
+    return len.unwrap();
+}
+
+fn main() -> std::io::Result<()> {
+    println!("Dec03");
+    //let mut sum: [i32; 5] = [0; 5];
+    //let mut sum: Vec<i32> = Vec::new();
+
+    // read input.txt
+    let path = "./../../dec03/input.txt";
+    //let path = "./../../dec03/test.txt";
+    let f0 = File::open(path)?;
+    let n = array_len(f0) - 1;
+    println!("array len: {}", n); 
+
+    let mut prev = String::new();
+    let mut last = String::new();
+    for i in 0..=n-1 {
+        let mut sum: isize = 0;
+
+        let f = File::open(path)?;
+        let mut reader = BufReader::new(f);
+        loop {
+            let mut line = String::new();
+            let len = reader.read_line(&mut line)?;
+            if len <= 1 { println!("EOF"); break; }
+
+            if !prev.is_empty() {
+                // let cp = line.chars().nth(i - 1).unwrap();
+                if line.starts_with(prev.as_str()) {
+                    println!("{i} Line is {len} bytes long: {line}");
+                    let c = line.chars().nth(i).unwrap();
+                    //println!("{:?}", c);
+                    match c {
+                        '0' => { sum -= 1; }
+                        '1' => { sum += 1; }
+                        _ => { panic!("unknown bit"); }
+                    }
+                    last = line;
+                }
+            } else {
+                println!("{i} Line is {len} bytes long: {line}");
+                let c = line.chars().nth(i).unwrap();
+                //println!("{:?}", c);
+                match c {
+                    '0' => { sum -= 1; }
+                    '1' => { sum += 1; }
+                    _ => { panic!("unknown bit"); }
+                }
+            }
+        }
+
+        //if sum >= 0 { prev.push('1'); } // for oxig
+        if sum < 0 { prev.push('1'); } // for co2
+        else { prev.push('0'); }
+
+        println!("sum[{}]={}", i, sum);
+    }
+    
+    Ok(())
+}
+
+// --part1--
+/*
 fn main() -> std::io::Result<()> {
     println!("Dec03");
     //let mut sum: [i32; 5] = [0; 5];
@@ -19,7 +78,6 @@ fn main() -> std::io::Result<()> {
     // read input.txt
     let f = File::open("./../../dec03/input.txt")?;
     //let f = File::open("./../../dec03/test.txt")?;
-    //let f = File::open("./../../dec03/test1.txt")?;
     let mut reader = BufReader::new(f);    
 
     loop {
@@ -55,12 +113,7 @@ fn main() -> std::io::Result<()> {
 
     println!("gamma {:?}", gamma);
     println!("epsilon {:?}", epsilon);
-    let g: u32 = convert(&gamma).into();
-    println!("gamma {:?}", g);
-    let e: u32 = convert(&epsilon).into();
-    println!("epsilon {:?}", e);
-    println!("result {:?}", g * e);
-    // println!("Value {}", txt.parse::<i32>().unwrap());
     
     Ok(())
 }
+*/
