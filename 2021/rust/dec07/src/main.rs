@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-fn main() {
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
+
+fn main() -> std::io::Result<()> {
     println!("dec07");
 
     // input: set of positions
@@ -61,31 +65,70 @@ fn main() {
     // 01010 = 10 v
     // 01011 = 11 x
 
-    let input: Vec<u32> = vec![16,1,2,0,4,2,7,1,2,14];
+    // 00011
+    // 00110
+    // 00101
+    // 01001
+    // 01010
+    // 01100
+    // 10001
+
+    // for i in 1..5
+    //   n = 2.pow(1)
+    //   for j in 1..5
+    //     m = n + 2.pow(1)
+
+
+    //let input: Vec<u64> = vec![16,1,2,0,4,2,7,1,2,14];
+    //let path = "./../../dec07/test.txt";
+    let path = "./../../dec07/input.txt";
+    let f = File::open(path)?;
+    let mut reader = BufReader::new(f);
+
+    let mut l = String::new();
+    let _len = reader.read_line(&mut l)?;
+    let mut input: Vec<u64> = l
+        .trim()
+        .split(',')
+        .map(|x| x.parse::<u64>().unwrap())
+        .collect();
+    println!("Line {:?} with len {}", input, input.len());
+    
     let mut map = HashMap::new(); 
 
     // find combinations of 2
-    const POW: u32 = 2u32.pow(10);
-    for i in 3..=POW {
-        if i.count_ones() == 2 {
-            let bin = format!("{i:010b}");
-            let l = bin.find('1').unwrap();
-            let r = bin.rfind('1').unwrap();
-            println!("{i} => {bin} 1s at {l} and {r}");
-            let diff = input[l].abs_diff(input[r]);
-            println!("{i} => {bin} 1s at {l} and {r}, diff {diff}");
-            match map.get_mut(&l) {
+    //const POW: u64 = 2u64.pow(1000);
+    let size: usize = input.len().try_into().unwrap();
+    // let pow: u32 = 20;
+    // for i in 3..=2u64.pow(pow) { // too brute force xD
+        // if i.count_ones() == 2 {
+    
+    for i in 1..=size-1 {
+        // let a = 2u64.pow(i); // again brute force and not needed
+        for j in 0..=i-1 {
+            // let b = a + 2u64.pow(j); // same
+            // let bin = format!("{b:010b}"); // actually dont need these
+            // let l = bin.find('1').unwrap();
+            // let r = bin.rfind('1').unwrap();
+            //println!("{i} => {bin} 1s at {l} and {r}");
+            
+            let diff = input[i].abs_diff(input[j]);
+            //println!("{i} => {bin} 1s at {l} and {r}, diff {diff}");
+            
+            match map.get_mut(&i) {
                 Some(x) => { *x += diff; },
-                None => { map.insert(l, diff); }
+                None => { map.insert(i, diff); }
             }
-            match map.get_mut(&r) {
+            match map.get_mut(&j) {
                 Some(x) => { *x += diff; },
-                None => { map.insert(r, diff); }
+                None => { map.insert(j, diff); }
             }
         }
     }
+        //}
+    //}
     
-    let mut min = u32::MAX;
+    let mut min = u64::MAX;
     let mut min_pos: usize = 11;
 
     for (pos, diff) in &map {
@@ -95,4 +138,5 @@ fn main() {
         
     println!("Result {} => {}", input[min_pos], min);
 
+    return Ok(())
 }
