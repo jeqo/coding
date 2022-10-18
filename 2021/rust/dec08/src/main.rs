@@ -68,10 +68,10 @@ impl Numbers {
         assert!(parts.len() == 2);
 
         let signals: Vec<&str> = parts[0].split(' ').collect();
-        println!("Signal: {:?}", signals);
+        // println!("Signal: {:?}", signals);
         
         let digits: Vec<&str> = parts[1].split(' ').collect();
-        println!("Digits: {:?}", digits);
+        // println!("Digits: {:?}", digits);
 
         self.count_digits(digits);
     }
@@ -85,12 +85,35 @@ impl Numbers {
         }
     }
 }
-fn main() {
+
+
+
+use std::io::prelude::*;
+use std::io::BufReader;
+use std::fs::File;
+
+fn main() -> std::io::Result<()> {
     println!("Dec08");
 
     let mut nums = Numbers::new();
 
     // nums.decode("acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf");
+    
+    //let path = "./../../dec08/test.txt";
+    let path = "./../../dec08/input.txt";
+    let f = File::open(path)?;
+    let mut reader = BufReader::new(f);
+
+    loop {
+        let mut line = String::new();
+        let len = reader.read_line(&mut line)?;
+        
+        if len == 0 { println!("EOF"); break; }
+
+        nums.decode(line.as_str());
+    }
 
     println!("{:?}", nums);
+
+    Ok(())
 }
