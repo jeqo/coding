@@ -49,7 +49,11 @@ fn main() -> std::io::Result<()> {
     // [x] calculate diff
     // [x] group by position
     // [x] each position sums all diffs
-    // [ ] min diff wins
+    // [x] min diff wins
+    // this worked for constant fuel consumption but fails on linear growth
+
+    // h3:
+    // 
 
     // 5
     // 00000 = 0 x
@@ -87,56 +91,135 @@ fn main() -> std::io::Result<()> {
 
     let mut l = String::new();
     let _len = reader.read_line(&mut l)?;
-    let mut input: Vec<u64> = l
+    let input: Vec<u32> = l
         .trim()
         .split(',')
-        .map(|x| x.parse::<u64>().unwrap())
+        .map(|x| x.parse::<u32>().unwrap())
         .collect();
-    println!("Line {:?} with len {}", input, input.len());
-    
-    let mut map = HashMap::new(); 
 
-    // find combinations of 2
-    //const POW: u64 = 2u64.pow(1000);
     let size: usize = input.len().try_into().unwrap();
-    // let pow: u32 = 20;
-    // for i in 3..=2u64.pow(pow) { // too brute force xD
-        // if i.count_ones() == 2 {
+
+    let mut db = Database::new(input);
     
+    println!("DB: {:?}", db);
+
     for i in 1..=size-1 {
-        // let a = 2u64.pow(i); // again brute force and not needed
         for j in 0..=i-1 {
-            // let b = a + 2u64.pow(j); // same
-            // let bin = format!("{b:010b}"); // actually dont need these
-            // let l = bin.find('1').unwrap();
-            // let r = bin.rfind('1').unwrap();
-            //println!("{i} => {bin} 1s at {l} and {r}");
-            
-            let diff = input[i].abs_diff(input[j]);
-            //println!("{i} => {bin} 1s at {l} and {r}, diff {diff}");
-            
-            match map.get_mut(&i) {
-                Some(x) => { *x += diff; },
-                None => { map.insert(i, diff); }
-            }
-            match map.get_mut(&j) {
-                Some(x) => { *x += diff; },
-                None => { map.insert(j, diff); }
-            }
+            db.add(i, j);
         }
     }
-        //}
-    //}
     
-    let mut min = u64::MAX;
-    let mut min_pos: usize = 11;
-
-    for (pos, diff) in &map {
-        if diff < &min { min = *diff; min_pos = *pos }
-        println!("{} => {diff}", input[*pos]);
-    }
-        
-    println!("Result {} => {}", input[min_pos], min);
+    db.min();
 
     return Ok(())
+}
+
+#[derive(Debug)]
+struct Database {
+    values: Vec<u32>,
+    min: u32,
+    max: u32,
+    map: HashMap<u32, u64>,
+    calc: HashMap<u32, u32>,
+}
+
+impl Database {
+    fn new(values: Vec<u32>) -> Self {
+        let min = *values.iter().min().unwrap();
+        let max = *values.iter().max().unwrap();
+        
+        let len = max - min;
+        
+        let mut calc = HashMap::with_capacity((len + 1) as usize);
+
+        for i in 0..=len+1 {
+            calc.insert(i, (i * (i + 1)) / 2);
+        }
+        Self {
+            values,
+            min: min,
+            max: max,
+            map: HashMap::with_capacity(len as usize),
+            calc,
+        }
+
+    }
+
+    fn add(&mut self, x1: usize, x2: usize) {
+        let i = self.values[x1];
+        let j = self.values[x2];
+        let min = if i < j { i } else { j };
+        let max = if i > j { i } else { j };
+        let diff = max - min;
+
+        for p in self.min..self.max {
+            let d1 = min.abs_diff(p);
+            let c1 = self.calc.get(&d1).unwrap();
+            let d2 = max.abs_diff(p);
+            let c2 = self.calc.get(&d2).unwrap();
+            let calc = c1 + c2;
+            match self.map.get_mut(&p) {
+                Some(x) => { *x += (calc as u64); },
+                None => { self.map.insert(p, (calc as u64)); }
+            }
+            //println!("<{}, {}> at {}: diff: {} calc: {}", min, max, p, diff, calc);
+        }
+        
+        //match self.map.get_mut(&i) {
+        //    Some(x) => { *x += calc; },
+        //    None => { self.map.insert(i, calc); }
+        //}
+        //match self.map.get_mut(&j) {
+        //    Some(x) => { *x += calc; },
+        //    None => { self.map.insert(j, calc); }
+        //}
+
+        // e.g.
+        // 1 and 16
+        // diff = 15
+        // then calc diffs for
+        // 2,3,4....15
+        //if diff > 1 {
+        //    for k in 1..=(diff / 2) {
+        //        // act, 2 and 15 will be the same
+        //        // 1 from i/j and 14 from j/i
+        //        println!("Int: {} {} {}", i, j, k);
+
+        //        if i < j {
+        //            let calc1 = (k * (k + 1)) / 2;
+        //            let o = diff - k;
+        //            let calc2 = (o * (o + 1)) / 2;
+        //            self.map.insert(i + k, calc1 + calc2);
+        //            self.map.insert(j - k, calc1 + calc2);
+        //        } else {
+        //            let calc1 = (k * (k + 1)) / 2;
+        //            let o = diff - k;
+        //            let calc2 = (o * (o + 1)) / 2;
+        //            self.map.insert(j + k, calc1 + calc2);
+        //            self.map.insert(i - k, calc1 + calc2);
+        //        }
+        //    }
+        //}
+
+        //println!("Atm: {:?}", self.map);
+    }
+
+    fn min(&self) {
+        let mut min = u64::MAX;
+        let mut min_pos: u32 = 0;
+
+        for (pos, diff) in &self.map {
+            if diff < &min { min = *diff; min_pos = *pos }
+            println!("{} => {diff}", *pos);
+        }
+
+        let mut cost = 0;
+        for val in &self.values {
+            let diff = val.abs_diff(min_pos);
+            cost += self.calc.get(&diff).unwrap();
+        }
+        
+        println!("Result {} => {} with cost {}", min_pos, min, cost);
+    }
+    // ~1023sec to complete, ~17min
 }
