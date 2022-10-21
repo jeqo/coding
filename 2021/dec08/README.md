@@ -147,7 +147,9 @@ acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab |
 cdfeb fcadb cdfeb cdbaf
 ```
 
-After some careful analysis, the mapping between signal wires and segments only make sense in the following configuration:
+After some careful analysis, 
+the mapping between signal wires and segments only make sense 
+in the following configuration:
 
 ```
  dddd
