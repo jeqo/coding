@@ -129,7 +129,7 @@ impl Numbers {
         self.find_map(signals);
     }
 
-    fn find_map(&self, signals: Vec<&str>) {
+    fn find_map(&self, signals: Vec<&str>) -> [&Vec<u8>; 7] {
         let mut map: HashMap<usize, Vec<&str>> = HashMap::from([
             (6, Vec::new()),
             (2, Vec::new()),
@@ -148,7 +148,12 @@ impl Numbers {
 
         println!("Map: {:?}", map);
 
-        
+        let mut res: [&Vec<u8>; 7] = [&Vec::<u8>::new(); 7];
+
+        let first = map.get(&2).unwrap();
+        println!("{:?}", first);
+
+        return res;
     }
 
     fn count_digits(&mut self, digits: Vec<&str>) {
