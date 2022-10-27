@@ -60,24 +60,24 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 struct Numbers {
-    patterns: HashMap<String, u8>,
+    patterns: [String; 10],
     by_qty: HashMap<u8, Vec<usize>>,
     count_by_qty: HashMap<u8, u64>,
 }
 impl Numbers {
     fn new() -> Self {
-        let patterns = HashMap::from([
-            (String::from("abcefg"), 0),  // 118 // "1110111", // 0
-            (String::from("cf"), 1),      // 018 // "0010010", // 1
-            (String::from("acdeg"), 2),   // 093 // "1011101", // 2
-            (String::from("acdfg"), 3),   // 091 // "1011011", // 3
-            (String::from("bcdf"), 4),    // 058 // "0111010", // 4
-            (String::from("abdfg"), 5),   // 107 // "1101011", // 5
-            (String::from("abdefg"), 6),  // 111 // "1101111", // 6
-            (String::from("acf"), 7),     // 082 // "1010010", // 7
-            (String::from("abcdefg"), 8), // 127 // "1111111", // 8
-            (String::from("abcdfg"), 9),  // 123 // "1111011", // 9
-        ]);
+        let patterns = [
+            String::from("abcefg"),  // 118 // "1110111", // 0
+            String::from("cf"),      // 018 // "0010010", // 1
+            String::from("acdeg"),   // 093 // "1011101", // 2
+            String::from("acdfg"),   // 091 // "1011011", // 3
+            String::from("bcdf"),    // 058 // "0111010", // 4
+            String::from("abdfg"),   // 107 // "1101011", // 5
+            String::from("abdefg"),  // 111 // "1101111", // 6
+            String::from("acf"),     // 082 // "1010010", // 7
+            String::from("abcdefg"), // 127 // "1111111", // 8
+            String::from("abcdfg"),  // 123 // "1111011", // 9
+        ];
         let by_qty = HashMap::from([
             (6, vec![0, 6, 9]),
             (2, vec![1]),
@@ -94,7 +94,7 @@ impl Numbers {
         }
     }
 
-    fn decode(&mut self, code: &str) -> u64 {
+    fn decode(&mut self, code: &str) {
         let parts: Vec<&str> = code.trim().split(" | ").collect();
         assert!(parts.len() == 2);
 
@@ -106,31 +106,7 @@ impl Numbers {
         // println!("Digits: {:?}", digits);
 
         // self.count_digits(digits);
-        let mapping = self.find_map(signals);
-
-        let value = self.decipher(mapping, digits);
-
-        return value;
-    }
-
-    fn decipher(&self, mapping: HashMap<char, Vec<char>>, digits: Vec<&str>) -> u64 {
-        //println!("Dec: Map: {:?} Dig: {:?}", mapping, digits);
-        let mut nums = String::new();
-        for dig in digits {
-            let mut res = Vec::new();
-            for c in dig.chars() {
-                let m = mapping.get(&c).unwrap();
-                res.push(m[0]);
-            }
-            res.sort();
-            let txt: String = res.into_iter().collect();
-            let num = self.patterns.get(&txt).unwrap();
-            //println!("Sorted: {:?}", num);
-            nums.push_str(&*num.to_string());
-        }
-        let num = nums.parse::<u64>().unwrap();
-        //println!("Num: {:?}", num);
-        return num
+        self.find_map(signals);
     }
 
     // alg: 1 -> 7 -> 4 -> 8 -> [ 9 -> 0 -> 6 ] -> [ 5 -> 2 -> 3 ]
@@ -191,11 +167,11 @@ impl Numbers {
             if (s.len() == 7) {
                 for x in s.chars() {
                     let y = map.get_mut(&x).unwrap();
-                    //println!("7char: {}=>{:?}", x, y.len());
+                    println!("7char: {}=>{:?}", x, y.len());
                     if y.len() < 1 {
                         y.push('e');
                         y.push('g');
-                        //println!("Found: {:?}", y);
+                        println!("Found: {:?}", y);
                     }
                 }
             }
@@ -208,8 +184,8 @@ impl Numbers {
             }
         }
 
-        //println!("{:?}", six);
-        //println!("{:?}", five);
+        println!("{:?}", six);
+        println!("{:?}", five);
         
         let mut a: Vec<char> = map.get_mut(&'a').unwrap().to_vec();
         let mut b: Vec<char> = map.get_mut(&'b').unwrap().to_vec();
@@ -221,8 +197,7 @@ impl Numbers {
 
         map.get_mut(&'a').unwrap().retain(|&x| !c.contains(&x));
 
-        //println!("map: {:?}", map);
-        let keys: Vec<&String> = self.patterns.keys().collect();
+        println!("map: {:?}", map);
 
         for s in six {
             let y: Vec<char> = s.chars().collect();
@@ -231,18 +206,18 @@ impl Numbers {
             let v = all.pop().unwrap();
             map.get_mut(&v).unwrap().retain(|x| {
                 let pat = "abcdefg".replace(*x, "");
-                let r = keys.contains(&&pat);
-                //println!("Pat: {:?} {} for {}", pat, r, v);
+                let r = self.patterns.contains(&pat);
+                println!("Pat: {:?} {} for {}", pat, r, v);
                 return r;
             });
             {
                 let z = map.get(&v).unwrap();
-                //println!("z:{:?}", z);
+                println!("z:{:?}", z);
                 if z.len() == 1 && (z[0] == 'e' || z[0] == 'g') {
                     let tt = z[0];
                     for (key, value) in map.iter_mut() {
                         if value.len() == 2 && value.contains(&tt) {
-                            //println!("map kv: {:?}=>{:?} rm {}", key, value, tt);
+                            println!("map kv: {:?}=>{:?} rm {}", key, value, tt);
                             value.retain(|x| *x != tt);
                         }
                     }
@@ -250,12 +225,12 @@ impl Numbers {
             }
             {
                 let z = map.get(&v).unwrap();
-                //println!("z:{:?}", z);
+                println!("z:{:?}", z);
                 if z.len() == 1 && (z[0] == 'b' || z[0] == 'd') {
                     let tt = z[0];
                     for (key, value) in map.iter_mut() {
                         if value.len() == 2 && value.contains(&tt) {
-                            //println!("map kv: {:?}=>{:?} rm {}", key, value, tt);
+                            println!("map kv: {:?}=>{:?} rm {}", key, value, tt);
                             value.retain(|x| *x != tt);
                         }
                     }
@@ -263,21 +238,30 @@ impl Numbers {
             }
             {
                 let z = map.get(&v).unwrap();
-                //println!("z:{:?}", z);
+                println!("z:{:?}", z);
                 if z.len() == 1 && (z[0] == 'c' || z[0] == 'f') {
                     let tt = z[0];
                     for (key, value) in map.iter_mut() {
                         if value.len() == 2 && value.contains(&tt) {
-                            //println!("map kv: {:?}=>{:?} rm {}", key, value, tt);
+                            println!("map kv: {:?}=>{:?} rm {}", key, value, tt);
                             value.retain(|x| *x != tt);
                         }
                     }
                 }
             }
+            //if v == 'd' || v == 'b' {
+            //    for (key, value) in map.iter_mut() {
+            //        println!("Finding {} in {:?}", v, value);
+            //        if value.contains(&v) {
+            //            println!("map kv: {:?}=>{:?} rm {}", key, value, v);
+            //            value.retain(|x| *x != v);
+            //        }
+            //    }
+            //}
         }
 
         
-        //println!("map: {:?}", map);
+        println!("map: {:?}", map);
         return map;
 
     }
@@ -305,25 +289,24 @@ fn main() -> std::io::Result<()> {
 
     let mut nums = Numbers::new();
 
-    //nums.decode(
-    //    "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf",
-    //);
+    nums.decode(
+        "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf",
+    );
 
-    let path = "./../../dec08/test.txt";
+    //let path = "./../../dec08/test.txt";
     //let path = "./../../dec08/input.txt";
-    let f = File::open(path)?;
-    let mut reader = BufReader::new(f);
+    //let f = File::open(path)?;
+    //let mut reader = BufReader::new(f);
 
-    loop {
-        let mut line = String::new();
-        let len = reader.read_line(&mut line)?;
-    
-        if len == 0 { println!("EOF"); break; }
-        let num = nums.decode(line.as_str());
-        println!("Num: {}", num);
-    }
+    //loop {
+    //    let mut line = String::new();
+    //    let len = reader.read_line(&mut line)?;
+    //
+    //    if len == 0 { println!("EOF"); break; }
+    //    nums.decode(line.as_str());
+    //}
 
-    //println!("{:?}", nums);
+    println!("{:?}", nums);
 
     Ok(())
 }
