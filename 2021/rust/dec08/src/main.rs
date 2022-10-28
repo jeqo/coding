@@ -208,9 +208,6 @@ impl Numbers {
             }
         }
 
-        //println!("{:?}", six);
-        //println!("{:?}", five);
-        
         let mut a: Vec<char> = map.get_mut(&'a').unwrap().to_vec();
         let mut b: Vec<char> = map.get_mut(&'b').unwrap().to_vec();
         let mut c: Vec<char> = map.get_mut(&'c').unwrap().to_vec();
@@ -219,9 +216,8 @@ impl Numbers {
         let mut f: Vec<char> = map.get_mut(&'f').unwrap().to_vec();
         let mut g: Vec<char> = map.get_mut(&'g').unwrap().to_vec();
 
-        map.get_mut(&'a').unwrap().retain(|&x| !c.contains(&x));
-
         //println!("map: {:?}", map);
+
         let keys: Vec<&String> = self.patterns.keys().collect();
 
         for s in six {
@@ -305,14 +301,16 @@ fn main() -> std::io::Result<()> {
 
     let mut nums = Numbers::new();
 
-    //nums.decode(
-    //    "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf",
+    // nums.decode(
+    //    "fgeab ca afcebg bdacfeg cfaedg gcfdb baec bfadeg bafgc acf | gebdcfa ecba ca fadegcb",
     //);
 
-    let path = "./../../dec08/test.txt";
-    //let path = "./../../dec08/input.txt";
+    //let path = "./../../dec08/test.txt";
+    let path = "./../../dec08/input.txt";
     let f = File::open(path)?;
     let mut reader = BufReader::new(f);
+
+    let mut sum = 0u64;
 
     loop {
         let mut line = String::new();
@@ -321,9 +319,10 @@ fn main() -> std::io::Result<()> {
         if len == 0 { println!("EOF"); break; }
         let num = nums.decode(line.as_str());
         println!("Num: {}", num);
+        sum += num;
     }
 
-    //println!("{:?}", nums);
+    println!("Sum {:?}", sum);
 
     Ok(())
 }
