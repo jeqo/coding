@@ -4,9 +4,61 @@ line contains chunks,
 chunks can contain other chunks
 lines can be complete, incomplete, or corrupted
 */
-fn main() {
-    println!("Dec10");
-    process_line(&"{{}{{{}}{}}{}}");
+#[derive(Debug)]
+enum Result {
+    Complete(Vec<char>),
+    Incomplete(char),
+    Corrupt(char, char),
+}
+
+fn process_chunks(head: char, tail: &[char]) -> Result {
+    println!("Head: {} and Tail: {:?}", head, tail);
+    if tail.is_empty() {
+        return Result::Incomplete(head);
+    }
+    if tail.len() == 1 {
+        if is_pair(head, tail[0]) {
+            return Result::Complete(vec![]);
+        } else {
+            return Result::Corrupt(head, tail[0]);
+        }
+    } else {
+        if is_pair(head, tail[0]) {
+            return Result::Complete(tail[1..].to_vec());
+        } else {
+            match process_chunks(tail[0], &tail[1..]) {
+                Result::Complete(left) => {
+                    if left.is_empty() {
+                        return Result::Incomplete(head);
+                    } else {
+                        return process_chunks(head, &left[..]);
+                    }
+                }
+                r => return r,
+            }
+        }
+    }
+}
+
+fn is_pair(a: char, b: char) -> bool {
+    println!("Checking: {} and {}", a, b);
+    match a {
+        '(' => {
+            return b == ')';
+        }
+        '[' => {
+            return b == ']';
+        }
+        '{' => {
+            return b == '}';
+        }
+        '<' => {
+            return b == '>';
+        }
+        _ => {
+            return false;
+        }
+    }
 }
 
 fn process_line(line: &str) {
@@ -16,43 +68,33 @@ fn process_line(line: &str) {
     println!("All left: {:?}", left);
 }
 
-enum Result {
-    Complete,
-    Incomplete,
-    Corrupt
-}
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
 
-fn process_chunks(head: char, tail: &[char]) -> &[char] {
-    //if tail.len() < 1 { return &tail[..]; }
+fn main() -> std::io::Result<()> {
+    println!("Dec10");
+    //process_line(&"[]");
+    //println!();
+    //process_line(&"([])");
+    //println!();
+    //process_line(&"{()()()}");
+    //println!();
+    //process_line(&"<([{}])>");
+    //println!();
+    //process_line(&"[<>({}){}[([])<>]]");
+    //println!();
+    //process_line(&"(((((((((())))))))))");
+    
 
-    if is_opening(head) {
-        if is_closing(head, tail[0]) {
-            return &tail[1..];
-        } else {
-            let left = process_chunks(tail[0], &tail[1..]);
-            if is_closing(head, left[0]) {
-                if left.len() > 2 {
-                    return process_chunks(left[1], &left[2..]);
-                } else {
-                    return &left[1..]
-                }
-            } else {
-                return process_chunks(head, &left[0..]);
-            }
-        }
-    }
+    let path = "./../../dec10/test.txt";
+    //let path = "./../../dec10/input.txt";
+    let mut reader = BufReader::new(File::open(path)?);
 
-    return &tail[1..];
-}
+    let mut line = String::new();
+    let len = reader.read_line(&mut line)?;
 
-fn is_opening(a: char) -> bool {
-    return a == '{';
-}
+    println!("{}", line);
 
-fn is_closing(a: char, b: char) -> bool {
-    println!("Checking: {} and {}", a, b);
-    match a {
-        '{' => { return b == '}'; },
-        _ => { return false; }
-    }
+    Ok(())
 }
