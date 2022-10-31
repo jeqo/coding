@@ -6,28 +6,32 @@ lines can be complete, incomplete, or corrupted
 */
 #[derive(Debug)]
 enum Result {
-    Complete(Vec<char>),
+    Complete(),
+    InProgress(Vec<char>),
     Incomplete(char),
     Corrupt(char, char),
 }
 
 fn process_chunks(head: char, tail: &[char]) -> Result {
-    println!("Head: {} and Tail: {:?}", head, tail);
+    println!("H: {} T: {:?}", head, tail);
     if tail.is_empty() {
         return Result::Incomplete(head);
     }
     if tail.len() == 1 {
         if is_pair(head, tail[0]) {
-            return Result::Complete(vec![]);
+            return Result::Complete();
         } else {
             return Result::Corrupt(head, tail[0]);
         }
     } else {
         if is_pair(head, tail[0]) {
-            return Result::Complete(tail[1..].to_vec());
+            return Result::InProgress(tail[1..].to_vec());
         } else {
+            if is_closing(tail[0]) {
+                return Result::Corrupt(head, tail[0]);
+            }
             match process_chunks(tail[0], &tail[1..]) {
-                Result::Complete(left) => {
+                Result::InProgress(left) => {
                     if left.is_empty() {
                         return Result::Incomplete(head);
                     } else {
@@ -40,8 +44,12 @@ fn process_chunks(head: char, tail: &[char]) -> Result {
     }
 }
 
+fn is_closing(c: char) -> bool {
+    return c == ')' || c == '}' || c == ']' || c == '}';
+}
+
 fn is_pair(a: char, b: char) -> bool {
-    println!("Checking: {} and {}", a, b);
+    //println!("Checking: {} and {}", a, b);
     match a {
         '(' => {
             return b == ')';
@@ -64,8 +72,21 @@ fn is_pair(a: char, b: char) -> bool {
 fn process_line(line: &str) {
     let chars: Vec<char> = line.trim().chars().collect();
     println!("{:?}", chars);
-    let left = process_chunks(chars[0], &chars[1..]);
-    println!("All left: {:?}", left);
+    process(chars);
+}
+
+fn process(chars: Vec<char>) {
+    match process_chunks(chars[0], &chars[1..]) {
+        Result::InProgress(c) => { 
+            println!("InProgress! {:?}", c);
+            if !c.is_empty() {
+                process(c);
+            }
+        },
+        Result::Complete() => { println!("Complete"); }
+        Result::Corrupt(a, b) => { println!("Corrupt! {} {}", a, b); }
+        Result::Incomplete(a) => { println!("Incomplete! {}", a); }
+    }
 }
 
 use std::fs::File;
@@ -74,6 +95,8 @@ use std::io::BufReader;
 
 fn main() -> std::io::Result<()> {
     println!("Dec10");
+
+    //Completed
     //process_line(&"[]");
     //println!();
     //process_line(&"([])");
@@ -84,17 +107,44 @@ fn main() -> std::io::Result<()> {
     //println!();
     //process_line(&"[<>({}){}[([])<>]]");
     //println!();
-    //process_line(&"(((((((((())))))))))");
+
+    //Corrupted
+    //process_line(&"(]");
+    //println!();
+    //process_line(&"{()()()>");
+    //println!();
+    //process_line(&"(((()))}");
+    //println!();
+    //process_line(&"<([]){()}[{}])");
+    //println!();
+
+    //Incomplete
+    //process_line(&"[({(<(())[]>[[{[]{<()<>>");
+    //println!();
+
+    //process_line(&"[({(<(())[]>[[{[]{<()<>>");
+    //println!();
+    //process_line(&"[[<[([]))<([[{}[[()]]]");
+    //println!();
     
+    process_line(&"[(()[<>])]({[<{<<[]>>(");
+    println!();
+
 
     let path = "./../../dec10/test.txt";
     //let path = "./../../dec10/input.txt";
     let mut reader = BufReader::new(File::open(path)?);
 
-    let mut line = String::new();
-    let len = reader.read_line(&mut line)?;
+    loop {
+        let mut line = String::new();
+        let len = reader.read_line(&mut line)?;
+    
+        if len == 0 { println!("EOF"); break; }
 
-    println!("{}", line);
+        //process_line(&line);
+        //println!();
+    }
+
 
     Ok(())
 }
