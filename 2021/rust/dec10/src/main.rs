@@ -9,20 +9,25 @@ enum Result {
     Complete(),
     InProgress(Vec<char>),
     Error(char, Option<char>),
-    Incomplete(char),
+    Incomplete(Vec<char>),
     Corrupt(char, char),
+    Unknown(),
 }
 
 fn process_chunks(head: char, tail: &[char]) -> Result {
-    //println!("H: {} T: {:?}", head, tail);
+    println!("H: {} T: {:?}", head, tail);
     if tail.is_empty() {
-        return Result::Error(head, None);
+        return Result::Incomplete(vec![head]);
     }
     if tail.len() == 1 {
         if is_pair(head, tail[0]) {
             return Result::Complete();
         } else {
-            return Result::Error(head, Some(tail[0]));
+            if is_opening(head) && is_opening(tail[0]) {
+                return Result::Incomplete(vec![tail[0], head]);
+            } else {
+                return Result::Error(head, Some(tail[0]));
+            }
         }
     } else {
         if is_pair(head, tail[0]) {
@@ -38,6 +43,12 @@ fn process_chunks(head: char, tail: &[char]) -> Result {
                     } else {
                         return process_chunks(head, &left[..]);
                     }
+                },
+                Result::Complete() => { return Result::Incomplete(vec![head]); }
+                Result::Incomplete(mut a) => {
+                    println!("Incomplete! {:?}", a);
+                    a.push(head);
+                    return Result::Incomplete(a); 
                 }
                 r => return r,
             }
@@ -74,7 +85,7 @@ fn is_pair(a: char, b: char) -> bool {
     }
 }
 
-fn points(a: char) -> u32 {
+fn points(a: char) -> u64 {
     match a {
         ')' => {
             return 3;
@@ -94,43 +105,61 @@ fn points(a: char) -> u32 {
     }
 }
 
-fn process_line(line: &str) -> u32 {
+fn process_line(line: &str) -> (Result, u64) {
     let chars: Vec<char> = line.trim().chars().collect();
     println!("{:?}", chars);
     return process(chars);
 }
 
-fn process(chars: Vec<char>) -> u32 {
-    match process_chunks(chars[0], &chars[1..]) {
+fn process(chars: Vec<char>) -> (Result, u64) {
+    let result = process_chunks(chars[0], &chars[1..]);
+    match result {
         Result::InProgress(c) => { 
             // println!("InProgress! {:?}", c);
-            if !c.is_empty() {
-                return process(c);
-            }
-            return 0;
+            return process(c);
         },
-        Result::Complete() => { println!("Complete"); return 0; }
+        Result::Complete() => { println!("Complete"); return (result, 0); }
         Result::Error(a, b) => {
-            if b.is_none() { println!("Incomplete! {:?}", a); return 0; } 
+            if b.is_none() { println!("Incomplete! {:?}", a); return (Result::Incomplete(vec![a]), 0); } 
             else if is_opening(a) && is_closing(b.unwrap()) { 
                 println!("Corrupt! {} {:?}", a, b); 
-                return points(b.unwrap()); 
+                return (Result::Corrupt(a, b.unwrap()), points(b.unwrap())); 
             } 
             else if is_opening(a) && is_opening(b.unwrap()) { 
                 println!("Incomplete! {} {:?}", a, b); 
-                return points(b.unwrap()); 
+                return (Result::Incomplete(vec![a]), points(b.unwrap())); 
             } 
             else { 
                 println!("Unknown {} {:?}", a, b);
-                return points(b.unwrap()); 
+                return (Result::Unknown(), points(b.unwrap())); 
             }
         }
         Result::Corrupt(a, b) => { 
             println!("Corrupt! {} {}", a, b);
-            return points(b);  
+            return (result, points(b)); 
         }
-        Result::Incomplete(a) => { println!("Incomplete! {}", a); return 0; }
+        Result::Incomplete(a) => { 
+            //println!("Incomplete! {:?}", a);
+            let points = incomplete_points(&a);
+            return (Result::Incomplete(a), points);
+        }
+        Result::Unknown() => { return (result, 0);}
     }
+}
+
+fn incomplete_points(a: &Vec<char>) -> u64 {
+    let mut sum = 0;
+    for c in a {
+        sum = sum * 5;
+        match c {
+            '(' => sum += 1,
+            '[' => sum += 2,
+            '{' => sum += 3,
+            '<' => sum += 4,
+            _ => panic!("Unknown closing!"),
+        }
+    }
+    return sum;
 }
 
 use std::fs::File;
@@ -139,6 +168,50 @@ use std::io::BufReader;
 
 fn main() -> std::io::Result<()> {
     println!("Dec10");
+
+
+    //let path = "./../../dec10/test.txt";
+    let path = "./../../dec10/input.txt";
+    let mut reader = BufReader::new(File::open(path)?);
+    
+    let mut sum = 0;
+    let mut sum_inc = Vec::new();
+
+    loop {
+        let mut line = String::new();
+        let len = reader.read_line(&mut line)?;
+    
+        if len == 0 { println!("EOF"); break; }
+        let res = process_line(&line);
+        match res.0 {
+            Result::Corrupt(_, _) => sum += res.1,
+            Result::Incomplete(_) => {
+                println!("{:?}", res);
+                sum_inc.push(res.1);
+            },
+            _ => {},
+        }
+        
+        println!();
+    }
+
+    sum_inc.sort();
+
+    println!("Sum Part 1=> {}", sum);
+    for (a, b) in sum_inc.iter().enumerate() {
+        println!("Sum inc: {} => {}", a, b);
+    }
+
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_incomplete() {
 
     //Completed
     //process_line(&"[]");
@@ -170,29 +243,9 @@ fn main() -> std::io::Result<()> {
     //println!();
     //process_line(&"[[<[([]))<([[{}[[()]]]");
     //println!();
-    
-    //process_line(&"[(()[<>])]({[<{<<[]>>(");
-    //println!();
 
-
-    //let path = "./../../dec10/test.txt";
-    let path = "./../../dec10/input.txt";
-    let mut reader = BufReader::new(File::open(path)?);
-    
-    let mut sum = 0;
-
-    loop {
-        let mut line = String::new();
-        let len = reader.read_line(&mut line)?;
-    
-        if len == 0 { println!("EOF"); break; }
-
-        sum += process_line(&line);
-        println!();
+        let a = process_line(&"[(()[<>])]({[<{<<[]>>(");
+        println!("{:?}", a);
     }
 
-    println!("Sum => {}", sum);
-
-
-    Ok(())
 }
