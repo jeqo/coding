@@ -132,6 +132,15 @@ impl Grid {
         }
         return true;
     }
+    
+    fn has_already_exploded(&self) -> bool {
+        for pos in self.index.to_vec() {
+            if let Some(oct) = self.g.get(&pos) {
+                if oct.energy != 0 { return false; }
+            }           
+        }
+        return true;
+    }
 
     fn view(&self) -> String {
         let mut s = String::new();
@@ -156,9 +165,9 @@ use std::io::BufReader;
 fn main() -> std::io::Result<()> {
     println!("Dec11");
 
-    let path = "./../../dec11/test_0.txt";
+    //let path = "./../../dec11/test_0.txt";
     //let path = "./../../dec11/test_1.txt";
-    //let path = "./../../dec11/input.txt";
+    let path = "./../../dec11/input.txt";
     
     let mut reader = BufReader::new(File::open(path)?);
     
@@ -215,7 +224,7 @@ fn main() -> std::io::Result<()> {
         println!("Grid@{}", step);
         grid.print();
         println!();
-        if grid.is_ready_to_explode() {
+        if grid.has_already_exploded() {
             println!("Ready to explode @ {}", step);
             break;
         }
