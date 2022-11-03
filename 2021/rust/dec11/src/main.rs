@@ -66,21 +66,24 @@ impl Grid {
         self.index.push(pos);
     }
 
-    fn step(&mut self, step: u8) {
-        self.increase(&self.index.to_vec(), step);
+    fn step(&mut self, step: u8) -> u32 {
+        return self.increase(&self.index.to_vec(), step);
     }
 
-    fn increase(&mut self, pos_set: &Vec<Pos>, step: u8) {
+    fn increase(&mut self, pos_set: &Vec<Pos>, step: u8) -> u32 {
+        let mut count = 0;
         for pos in pos_set {
             if let Some(oct) = self.g.get_mut(&pos) {
                 oct.increase(step);
                 if oct.ready_to_flash() {
                     oct.flash();
+                    count += 1;
                     let adj = self.adjacents(pos);
-                    self.increase(&adj, step);
+                    count += self.increase(&adj, step);
                 }
             }           
         }
+        return count;
     }
 
     fn adjacents(&self, pos: &Pos) -> Vec<Pos> {
@@ -167,14 +170,18 @@ fn main() -> std::io::Result<()> {
     grid.print();
     println!();
 
+    let mut sum = 0;
+
     //for step in 1..3 { // test_0
     //for step in 1..11 { // test_1
     for step in 1..101 { // test_1
-        grid.step(step as u8);
+        sum += grid.step(step as u8);
         println!("Grid@{}", step);
         grid.print();
         println!();
     }
+
+    println!("Sum: {}", sum);
 
 
     Ok(())
