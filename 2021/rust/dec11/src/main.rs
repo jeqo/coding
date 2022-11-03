@@ -4,17 +4,18 @@ struct Pos(usize,usize);
 
 #[derive(Debug)]
 struct Octopus {
-    pos: Pos,
+    //pos: Pos,
     energy: u32,
     has_flashed: bool,
     last_step: u8
 }
 
 impl Octopus {
-    pub fn new(pos: Pos, energy: u32) -> Self {
+    //pub fn new(pos: Pos, energy: u32) -> Self {
+    pub fn new(energy: u32) -> Self {
         assert!(energy <= 9);
         Self {
-            pos,
+            //pos,
             energy,
             has_flashed: false,
             last_step: 0,
@@ -60,7 +61,7 @@ impl Grid {
     }
 
     fn add(&mut self, pos: Pos, energy: u32) {
-        let oct = Octopus::new(pos, energy);
+        let oct = Octopus::new(energy);
         self.g.insert(pos, oct);
         self.index.push(pos);
     }
@@ -115,6 +116,16 @@ impl Grid {
 
         return adj;
     }
+
+    fn print(&self) {
+        for i in 0..self.side {
+            for j in 0..self.side {
+                let oct = self.g.get(&Pos(i, j)).unwrap();
+                print!("{} ", oct.energy);
+            }
+            print!("\n");
+        }
+    }
 }
 
 use std::fs::File;
@@ -123,8 +134,8 @@ use std::io::BufReader;
 fn main() -> std::io::Result<()> {
     println!("Dec11");
 
-    let path = "./../../dec11/test_0.txt";
-    //let path = "./../../dec11/test_1.txt";
+    //let path = "./../../dec11/test_0.txt";
+    let path = "./../../dec11/test_1.txt";
     //let path = "./../../dec11/input.txt";
     
     let mut reader = BufReader::new(File::open(path)?);
@@ -148,12 +159,23 @@ fn main() -> std::io::Result<()> {
             grid.add(Pos(i, j), digits[j]);
         }
     
-        println!("{:?}", digits);
+        //println!("{:?}", digits);
         i += 1;
     }
+    
+    println!("Grid @ 0");
+    grid.print();
+    println!();
 
-    println!("Grid");
-    println!("{:?}", grid);
+    //for step in 1..3 { // test_0
+    //for step in 1..11 { // test_1
+    for step in 1..101 { // test_1
+        grid.step(step as u8);
+        println!("Grid@{}", step);
+        grid.print();
+        println!();
+    }
+
 
     Ok(())
 }
@@ -164,14 +186,16 @@ mod tests {
 
     #[test]
     fn test_octopus_initial_state() {
-        let oct = Octopus::new(Pos(0,0), 1);
+        //let oct = Octopus::new(Pos(0,0), 1);
+        let oct = Octopus::new(1);
         assert_eq!(oct.last_step, 0);
         assert_eq!(oct.has_flashed, false);
     }
     
     #[test]
     fn test_octopus_increase_normal() {
-        let mut oct = Octopus::new(Pos(0,0), 1);
+        //let mut oct = Octopus::new(Pos(0,0), 1);
+        let mut oct = Octopus::new(1);
         oct.increase(1);
         assert_eq!(oct.last_step, 1);
         assert_eq!(oct.energy, 2);
@@ -182,7 +206,8 @@ mod tests {
     
     #[test]
     fn test_octopus_increase_til_ready() {
-        let mut oct = Octopus::new(Pos(0,0), 9);
+        //let mut oct = Octopus::new(Pos(0,0), 9);
+        let mut oct = Octopus::new(9);
         assert_eq!(oct.ready_to_flash(), false);
         oct.increase(2);
         assert_eq!(oct.last_step, 2);
@@ -192,7 +217,8 @@ mod tests {
 
     #[test]
     fn test_octopus_flash() {
-        let mut oct = Octopus::new(Pos(0,0), 9);
+        //let mut oct = Octopus::new(Pos(0,0), 9);
+        let mut oct = Octopus::new(9);
         assert_eq!(oct.ready_to_flash(), false);
         oct.increase(2);
         assert_eq!(oct.last_step, 2);
