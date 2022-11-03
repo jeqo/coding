@@ -30,12 +30,16 @@ impl Octopus {
         }
     }
 
-    fn ready_to_flash(&self) -> bool {
+    fn is_ready_to_flash(&self) -> bool {
         return self.energy > 9;
+    }
+    
+    fn is_about_to_be_ready(&self) -> bool {
+        return self.energy == 9;
     }
 
     fn flash(&mut self) {
-        if self.ready_to_flash() {
+        if self.is_ready_to_flash() {
             self.has_flashed = true;
             self.energy = 0;
         }
@@ -75,7 +79,7 @@ impl Grid {
         for pos in pos_set {
             if let Some(oct) = self.g.get_mut(&pos) {
                 oct.increase(step);
-                if oct.ready_to_flash() {
+                if oct.is_ready_to_flash() {
                     oct.flash();
                     count += 1;
                     let adj = self.adjacents(pos);
@@ -120,14 +124,29 @@ impl Grid {
         return adj;
     }
 
-    fn print(&self) {
+    fn is_ready_to_explode(&self) -> bool {
+        for pos in self.index.to_vec() {
+            if let Some(oct) = self.g.get(&pos) {
+                if !oct.is_about_to_be_ready() { return false; }
+            }           
+        }
+        return true;
+    }
+
+    fn view(&self) -> String {
+        let mut s = String::new();
         for i in 0..self.side {
             for j in 0..self.side {
                 let oct = self.g.get(&Pos(i, j)).unwrap();
-                print!("{} ", oct.energy);
+                s.push_str(&format!("{} ", oct.energy));
             }
-            print!("\n");
+            s.push_str(&format!("\n"));
         }
+        return s;
+    }
+
+    fn print(&self) {
+        print!("{}", self.view());
     }
 }
 
@@ -137,9 +156,9 @@ use std::io::BufReader;
 fn main() -> std::io::Result<()> {
     println!("Dec11");
 
-    //let path = "./../../dec11/test_0.txt";
+    let path = "./../../dec11/test_0.txt";
     //let path = "./../../dec11/test_1.txt";
-    let path = "./../../dec11/input.txt";
+    //let path = "./../../dec11/input.txt";
     
     let mut reader = BufReader::new(File::open(path)?);
     
@@ -170,19 +189,44 @@ fn main() -> std::io::Result<()> {
     grid.print();
     println!();
 
-    let mut sum = 0;
+    let first = grid.view();
+
+    /*
+    Part 1
+    // let mut sum = 0;
 
     //for step in 1..3 { // test_0
     //for step in 1..11 { // test_1
-    for step in 1..101 { // test_1
+    for step in 1..101 {
         sum += grid.step(step as u8);
         println!("Grid@{}", step);
         grid.print();
         println!();
     }
-
     println!("Sum: {}", sum);
+    */
 
+    /* Part 2*/
+    let mut step = 1;
+    let mut sum = 0;
+
+    loop {
+        sum += grid.step(step as u8);
+        println!("Grid@{}", step);
+        grid.print();
+        println!();
+        if grid.is_ready_to_explode() {
+            println!("Ready to explode @ {}", step);
+            break;
+        }
+        if first == grid.view() {
+            println!("Infinite loop, not found!!");
+            break;
+        }
+        step+=1;
+    }
+    
+    println!("Sum: {}", sum);
 
     Ok(())
 }
@@ -215,22 +259,22 @@ mod tests {
     fn test_octopus_increase_til_ready() {
         //let mut oct = Octopus::new(Pos(0,0), 9);
         let mut oct = Octopus::new(9);
-        assert_eq!(oct.ready_to_flash(), false);
+        assert_eq!(oct.is_ready_to_flash(), false);
         oct.increase(2);
         assert_eq!(oct.last_step, 2);
         assert_eq!(oct.energy, 10);
-        assert_eq!(oct.ready_to_flash(), true);
+        assert_eq!(oct.is_ready_to_flash(), true);
     }
 
     #[test]
     fn test_octopus_flash() {
         //let mut oct = Octopus::new(Pos(0,0), 9);
         let mut oct = Octopus::new(9);
-        assert_eq!(oct.ready_to_flash(), false);
+        assert_eq!(oct.is_ready_to_flash(), false);
         oct.increase(2);
         assert_eq!(oct.last_step, 2);
         assert_eq!(oct.energy, 10);
-        assert_eq!(oct.ready_to_flash(), true);
+        assert_eq!(oct.is_ready_to_flash(), true);
         assert_eq!(oct.has_flashed, false);
         
         oct.flash();
@@ -240,13 +284,13 @@ mod tests {
         oct.increase(2);
         assert_eq!(oct.last_step, 2);
         assert_eq!(oct.energy, 0);
-        assert_eq!(oct.ready_to_flash(), false);
+        assert_eq!(oct.is_ready_to_flash(), false);
         assert_eq!(oct.has_flashed, true);
         
         oct.increase(3);
         assert_eq!(oct.last_step, 3);
         assert_eq!(oct.energy, 1);
-        assert_eq!(oct.ready_to_flash(), false);
+        assert_eq!(oct.is_ready_to_flash(), false);
         assert_eq!(oct.has_flashed, false);
     }
 
