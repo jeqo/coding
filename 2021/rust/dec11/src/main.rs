@@ -138,8 +138,8 @@ fn main() -> std::io::Result<()> {
     println!("Dec11");
 
     //let path = "./../../dec11/test_0.txt";
-    let path = "./../../dec11/test_1.txt";
-    //let path = "./../../dec11/input.txt";
+    //let path = "./../../dec11/test_1.txt";
+    let path = "./../../dec11/input.txt";
     
     let mut reader = BufReader::new(File::open(path)?);
     
