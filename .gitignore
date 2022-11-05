@@ -1,1 +1,4 @@
 Cargo.lock
+
+**/__pycache__
+**/venv
