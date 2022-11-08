@@ -1,29 +1,39 @@
-from main import Cave
+from main import Graph
+
+
+def test_cave_link_start():
+    g = Graph()
+    g.link('start-A')
+    print(g.g)
+    assert len(g.g['start']) == 1
+    assert 'A' not in g.g
+
+def test_cave_link_end():
+    g = Graph()
+    g.link('A-end')
+    assert len(g.g['A']) == 1
+    assert 'end' not in g.g
 
 def test_cave_link_big_big():
-    a = Cave('A')
-    b = Cave('B')
-    a.link(b)
-    assert len(a.links) == 1
-    assert len(b.links) == 1
+    g = Graph()
+    g.link('A-B')
+    assert len(g.g['A']) == 1
+    assert len(g.g['B']) == 1
 
 def test_cave_link_big_small():
-    a = Cave('A')
-    b = Cave('b')
-    a.link(b)
-    assert len(a.links) == 1
-    assert len(b.links) == 1
+    g = Graph()
+    g.link('A-b')
+    assert len(g.g['A']) == 1
+    assert len(g.g['b']) == 1
 
 def test_cave_link_small_small():
-    a = Cave('a')
-    b = Cave('b')
-    a.link(b)
-    assert len(a.links) == 1
-    assert len(b.links) == 0
+    g = Graph()
+    g.link('a-b')
+    assert len(g.g['a']) == 1
+    assert 'b' not in g.g
 
 def test_cave_link_small_big():
-    a = Cave('a')
-    b = Cave('B')
-    a.link(b)
-    assert len(a.links) == 1
-    assert len(b.links) == 0
+    g = Graph()
+    g.link('a-B')
+    assert len(g.g['a']) == 1
+    assert len(g.g['B']) == 1
