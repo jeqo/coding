@@ -9,63 +9,76 @@ class Graph:
         _from = p[0]
         _to = p[1]
         self.add(_from, _to)
-        if _from.isupper() or _to.isupper() :
-            self.add(_to, _from)
+        self.add(_to, _from)
 
     def add(self, _from, _to):
         if _to == 'start' or _from == 'end':
             return
-        print(f"Add {_from} -> {_to}")
+        #print(f"Add {_from} -> {_to}")
         if _from not in self.g:
             self.g[_from] = [_to]
         else:
             self.g[_from].append(_to)
 
 
-def paths(g):
-    paths = []
-    for i in range(0, len(g.g['start'])):
-        paths.append(inner_paths(g, 'start', i, []))
-    return paths
+    # start # start
+    # start-A # loop - branch 1
+    # start-A-b-A # loop
+    # start-A-b-A-c # loop
+    # start-A-b-A-c-A-end # return
+    # start-A-b-A-end # return
+    # start-b # loop - branch 2
+    def do_paths(self):
+        _from = 'start'
+        paths = []
+        for _to in self.g[_from]:
+            for path in self.do_inner_paths(_from, _to, []):
+                paths.append(path)
+        return paths
 
-def inner_paths(g, cave, i, prev):
-    if cave.islower() and cave in prev:
-        print(f'small cave {cave} already found @ {i}')
-        p = prev[len(prev) - 1]
-        opts = g.g[p]
-        idx = opts.index(cave)
-        print(f'index: {idx}')
-        if idx + 1 < len(opts):
-            del(prev[len(prev)-1])
-            return inner_paths(g, p, idx+1, prev)
-        else:
-            return prev
-    
-    print(cave)
-    prev.append(cave)
-    
-    if cave == 'end': # final cave
-        print('end!')
-        return prev
-    if cave not in g.g: # lost
-        print('last path step ' + cave)
-        return prev
-    
-    opt = g.g[cave][i]
-    
-    return inner_paths(g, opt, 0, prev)
+    def do_inner_paths(self, _from, _to, path):
+        if _from.islower() and _from in path:
+            print(f'Step {_from} already present {path}')
+            return []
 
+        # print(f'Do inner paths: {_from}->{_to} with path: {path}')
+        path.append(_from)
+
+        if _to == 'end':
+            path.append(_to)
+            print(f'Found end! with path: {path}')
+            return [path]
+
+        if _to not in self.g: # lost
+            print(f'no exit @ {_to}')
+            return []
+            
+        paths = []
+        for _next in self.g[_to]:
+            # print(f'Check next {_to}->{_next} with path: {path}')
+            if _next in path and path[path.index(_next) - 1] == _to:
+                print(f'Step {_to}->{_next} already present {path}')
+            else:
+                res = self.do_inner_paths(_to, _next, path.copy())
+                # print(f'Intermediate {res}')
+                for r in res:
+                    paths.append(r)
+        
+        return paths
 
 def main():
     g = Graph()
 
-    f = open('../../dec12/test_0.txt', 'r')
+    #f = open('../../dec12/test_0.txt', 'r')
+    #f = open('../../dec12/test_1.txt', 'r')
+    #f = open('../../dec12/test_2.txt', 'r')
+    f = open('../../dec12/input.txt', 'r')
     for line in f.readlines():
         g.link(line.strip())
 
     print(g.g)
-
-    print(paths(g))
+    res = g.do_paths()
+    print(f'Resultado: {res} total={len(res)}')
 
     return 0
 
