@@ -77,9 +77,10 @@ def test_simple_path_with_loop():
     paths = g.do_paths()
     print(f'Result {paths}')
     # then
-    assert len(paths) == 2
-    assert paths[0] == ['start', 'A', 'b', 'A', 'end']
-    assert paths[1] == ['start', 'A', 'end']
+    assert len(paths) == 3
+    assert paths[0] == ['start', 'A', 'b', 'A', 'b', 'A', 'end']
+    assert paths[1] == ['start', 'A', 'b', 'A', 'end']
+    assert paths[2] == ['start', 'A', 'end']
     
 def test_part_one_set_0():
     g = Graph()
@@ -91,7 +92,44 @@ def test_part_one_set_0():
     res = g.do_paths()
     print(f'Resultado: {res} total={len(res)}')
 
-    assert len(res) == 10
+    assert ['start','A','b','A','b','A','c','A','end'] in res
+    assert ['start','A','b','A','b','A','end'] in res
+    assert ['start','A','b','A','b','end'] in res
+    assert ['start','A','b','A','c','A','b','A','end'] in res
+    assert ['start','A','b','A','c','A','b','end'] in res
+    assert ['start','A','b','A','c','A','c','A','end'] in res
+    assert ['start','A','b','A','c','A','end'] in res
+    assert ['start','A','b','A','end'] in res
+    assert ['start','A','b','d','b','A','c','A','end'] in res
+    assert ['start','A','b','d','b','A','end'] in res
+    assert ['start','A','b','d','b','end'] in res
+    assert ['start','A','b','end'] in res
+    assert ['start','A','c','A','b','A','b','A','end'] in res
+    assert ['start','A','c','A','b','A','b','end'] in res
+    assert ['start','A','c','A','b','A','c','A','end'] in res
+    assert ['start','A','c','A','b','A','end'] in res
+    assert ['start','A','c','A','b','d','b','A','end'] in res
+    assert ['start','A','c','A','b','d','b','end'] in res
+    assert ['start','A','c','A','b','end'] in res
+    assert ['start','A','c','A','c','A','b','A','end'] in res
+    assert ['start','A','c','A','c','A','b','end'] in res
+    assert ['start','A','c','A','c','A','end'] in res
+    assert ['start','A','c','A','end'] in res
+    assert ['start','A','end'] in res
+    assert ['start','b','A','b','A','c','A','end'] in res
+    assert ['start','b','A','b','A','end'] in res
+    assert ['start','b','A','b','end'] in res
+    assert ['start','b','A','c','A','b','A','end'] in res
+    assert ['start','b','A','c','A','b','end'] in res
+    assert ['start','b','A','c','A','c','A','end'] in res
+    assert ['start','b','A','c','A','end'] in res
+    assert ['start','b','A','end'] in res
+    assert ['start','b','d','b','A','c','A','end'] in res
+    assert ['start','b','d','b','A','end'] in res
+    assert ['start','b','d','b','end'] in res
+    assert ['start','b','end'] in res
+
+    assert len(res) == 36
 
 def test_part_one_set_1():
     g = Graph()
@@ -102,27 +140,27 @@ def test_part_one_set_1():
     print(g.g)
     res = g.do_paths()
     print(f'Resultado: {res} total={len(res)}')
-    
-    assert ['start','HN','dc','HN','end'] in res
-    assert ['start','HN','dc','HN','kj','HN','end'] in res
-    assert ['start','HN','dc','end'] in res
-    assert ['start','HN','dc','kj','HN','end'] in res
-    assert ['start','HN','end'] in res
-    assert ['start','HN','kj','HN','dc','HN','end'] in res
-    assert ['start','HN','kj','HN','dc','end'] in res
-    assert ['start','HN','kj','HN','end'] in res
-    assert ['start','HN','kj','dc','HN','end'] in res
-    assert ['start','HN','kj','dc','end'] in res
-    assert ['start','dc','HN','end'] in res
-    assert ['start','dc','HN','kj','HN','end'] in res
-    assert ['start','dc','end'] in res
-    assert ['start','dc','kj','HN','end'] in res
-    assert ['start','kj','HN','dc','HN','end'] in res
-    assert ['start','kj','HN','dc','end'] in res
-    assert ['start','kj','HN','end'] in res
-    assert ['start','kj','dc','HN','end'] in res
-    assert ['start','kj','dc','end'] in res
-    assert len(res) == 19
+#    
+#    assert ['start','HN','dc','HN','end'] in res
+#    assert ['start','HN','dc','HN','kj','HN','end'] in res
+#    assert ['start','HN','dc','end'] in res
+#    assert ['start','HN','dc','kj','HN','end'] in res
+#    assert ['start','HN','end'] in res
+#    assert ['start','HN','kj','HN','dc','HN','end'] in res
+#    assert ['start','HN','kj','HN','dc','end'] in res
+#    assert ['start','HN','kj','HN','end'] in res
+#    assert ['start','HN','kj','dc','HN','end'] in res
+#    assert ['start','HN','kj','dc','end'] in res
+#    assert ['start','dc','HN','end'] in res
+#    assert ['start','dc','HN','kj','HN','end'] in res
+#    assert ['start','dc','end'] in res
+#    assert ['start','dc','kj','HN','end'] in res
+#    assert ['start','kj','HN','dc','HN','end'] in res
+#    assert ['start','kj','HN','dc','end'] in res
+#    assert ['start','kj','HN','end'] in res
+#    assert ['start','kj','dc','HN','end'] in res
+#    assert ['start','kj','dc','end'] in res
+    assert len(res) == 103
 
 def test_part_one_set_2():
     g = Graph()
@@ -134,4 +172,4 @@ def test_part_one_set_2():
     res = g.do_paths()
     print(f'Resultado: {res} total={len(res)}')
 
-    assert len(res) == 226
+    assert len(res) == 3509

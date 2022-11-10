@@ -32,14 +32,17 @@ class Graph:
         _from = 'start'
         paths = []
         for _to in self.g[_from]:
-            for path in self.do_inner_paths(_from, _to, []):
+            for path in self.do_inner_paths(_from, _to, [], True):
                 paths.append(path)
         return paths
 
-    def do_inner_paths(self, _from, _to, path):
+    def do_inner_paths(self, _from, _to, path, rep):
         if _from.islower() and _from in path:
-            print(f'Step {_from} already present {path}')
-            return []
+            if rep:
+                rep = False
+            else:
+                print(f'Step {_from} already present {path}')
+                return []
 
         # print(f'Do inner paths: {_from}->{_to} with path: {path}')
         path.append(_from)
@@ -56,14 +59,13 @@ class Graph:
         paths = []
         for _next in self.g[_to]:
             # print(f'Check next {_to}->{_next} with path: {path}')
-            if _next in path and path[path.index(_next) - 1] == _to:
+            if not rep and _next in path and path[path.index(_next) - 1] == _to:
                 print(f'Step {_to}->{_next} already present {path}')
             else:
-                res = self.do_inner_paths(_to, _next, path.copy())
+                res = self.do_inner_paths(_to, _next, path.copy(), rep)
                 # print(f'Intermediate {res}')
                 for r in res:
                     paths.append(r)
-        
         return paths
 
 def main():
