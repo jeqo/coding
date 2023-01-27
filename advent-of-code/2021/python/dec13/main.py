@@ -74,7 +74,7 @@ class TransparentPaper:
                 if p.y in dots_by_row: dots_by_row[p.y].append(p.x)
                 else: dots_by_row[p.y] = [ p.x ]
                 if p.x in dots_by_col: dots_by_col[p.x].append(p.y)
-                else: dots_by_row[p.x] = [ p.y ]
+                else: dots_by_col[p.x] = [ p.y ]
             else:
                 if instruction.startswith("fold along "):
                     fold = FoldInstruction(instruction)
@@ -82,8 +82,57 @@ class TransparentPaper:
         return cls(rows + 1, cols + 1, dots_by_row, dots_by_col, folds)
 
     def fold(self):
-        f = folds.popleft()
+        f = self.folds.pop(0)
         print(f)
+        # print("Folds left:")
+        # print(*self.folds, sep = ",")
+        rows = 0
+        cols = 0
+        dots_by_row = {} # dots positions organized by row
+        dots_by_col = {} # dots positions organized by row
+
+        match f.direction:
+            case "x": # vertical cut
+                rows = self.rows
+                cols = f.position
+                # go throu rows, find changes, and update refs by col
+                # TODO vertical cut
+            case "y": # horizontal cut
+                rows = f.position
+                cols = self.cols
+                dots_by_row = self.dots_by_row
+                dots_by_col = self.dots_by_col
+                # go throu cols, find changes, and update refs by row
+                for r in range(f.position + 1, self.rows):
+                    print(r)
+                    if r in dots_by_row:
+                        row = dots_by_row.pop(r)
+                        i = self.rows - r - 1 
+                        print(i)
+                        if i in dots_by_row: dots_by_row[i].extend(row)
+                        else: dots_by_row[i] = row
+
+                for c in range(0, cols):
+                    if c in self.dots_by_col:
+                        dots = self.dots_by_col[c]
+                        new_dots = []
+                        for d in dots:
+                            if d > f.position:
+                                new_pos = self.rows - d - 1
+                                if new_pos not in new_dots:
+                                    new_dots.append(self.rows - d - 1)
+                            else:
+                                new_dots.append(d)
+                        dots_by_col[c] = new_dots
+
+
+
+                
+        print("Rows=% s, Cols=% s" % (rows, cols))
+        print("Dots per row=% s" % dots_by_row)
+        print("Dots per col=% s" % dots_by_col)
+        # return TransparentPaper(rows, cols, dots_by_row, dots_by_col)
+
 
     def print(self):
         for i in range(0, self.rows):
