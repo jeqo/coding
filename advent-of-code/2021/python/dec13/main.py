@@ -81,6 +81,10 @@ class TransparentPaper:
                     folds.append(fold)
         return cls(rows + 1, cols + 1, dots_by_row, dots_by_col, folds)
 
+    def fold(self):
+        f = folds.popleft()
+        print(f)
+
     def print(self):
         for i in range(0, self.rows):
             line = ""
@@ -102,6 +106,7 @@ def main() -> int:
     t = TransparentPaper.parse(f.readlines())
     print(t)
     t.print()
+    t.fold()
     return 0
 
 
