@@ -42,13 +42,26 @@ class Position:
 
 
 class TransparentPaper:
-    def __init__(self, instructions):
+    def __init__(self, rows, cols, dots_by_row, dots_by_col, folds):
+
+        # zero indexed
+        self.rows = rows
+        self.cols = cols
+
+        self.dots_by_row = dots_by_row
+        self.dots_by_col = dots_by_col
+        self.folds = folds
+
+    #def fold(self):
+    @classmethod
+    def parse(cls, instructions):
         """
         Instructions as in the input of the problem are received and parsed.
         """
         rows = 0
         cols = 0
-        dots = {} # dots positions organized by row
+        dots_by_row = {} # dots positions organized by row
+        dots_by_col = {} # dots positions organized by row
         folds = []
         for i in instructions:
             instruction = i.strip()
@@ -58,25 +71,21 @@ class TransparentPaper:
                     cols = p.x
                 if p.y > rows:
                     rows = p.y
-                if p.y in dots: dots[p.y].append(p.x)
-                else: dots[p.y] = [ p.x ]
+                if p.y in dots_by_row: dots_by_row[p.y].append(p.x)
+                else: dots_by_row[p.y] = [ p.x ]
+                if p.x in dots_by_col: dots_by_col[p.x].append(p.y)
+                else: dots_by_row[p.x] = [ p.y ]
             else:
                 if instruction.startswith("fold along "):
                     fold = FoldInstruction(instruction)
                     folds.append(fold)
-
-        # zero indexed
-        self.rows = rows + 1
-        self.cols = cols + 1
-
-        self.dots = dots
-        self.folds = folds
+        return cls(rows + 1, cols + 1, dots_by_row, dots_by_col, folds)
 
     def print(self):
         for i in range(0, self.rows):
             line = ""
             for j in range(0, self.cols):
-                if i in self.dots and j in self.dots[i]:
+                if i in self.dots_by_row and j in self.dots_by_row[i]:
                     line = line + "#"
                 else:
                     line = line + "."
@@ -84,13 +93,13 @@ class TransparentPaper:
             print("Line:% s: % s" % (str(i).zfill(3), line))
 
     def __str__(self):
-        return "TransparentPaper(rows=% s,cols=% s,dots=% s,folds=% s)" % (self.rows, self.cols, self.dots, self.folds)
+        return "TransparentPaper(rows=% s,cols=% s,dots_by_row=% s,folds=% s)" % (self.rows, self.cols, self.dots_by_row, self.folds)
 
 
 def main() -> int:
     f = open('../../dec13/test.txt', 'r')
     # f = open('../../dec13/input.txt', 'r')
-    t = TransparentPaper(f.readlines())
+    t = TransparentPaper.parse(f.readlines())
     print(t)
     t.print()
     return 0
