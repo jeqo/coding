@@ -316,21 +316,12 @@ fn run() !void {
     _ = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
 
     var seed_to_soil = Tree.init(alloc);
-    // const seed_to_soil_first = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
-    // if (seed_to_soil_first) |m| {
-    //     const entry = try parse_map_entry(alloc, m);
-    //     seed_to_soil = TreeNode.init(entry);
-    // }
     while (true) {
         const msg = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
         if (msg) |m| {
             if (m.len > 0) {
                 const entry = try parse_map_entry(alloc, m);
                 try seed_to_soil.add(entry);
-                // const node = try alloc.create(TreeNode);
-                // errdefer alloc.destroy(node);
-                // node.* = TreeNode.init(entry);
-                // seed_to_soil.add_leaf(node);
             } else break;
         } else break;
     }
@@ -339,21 +330,12 @@ fn run() !void {
     _ = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
 
     var soil_to_fertilizer = Tree.init(alloc);
-    // const soil_to_fertilizer_first = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
-    // if (soil_to_fertilizer_first) |m| {
-    //     const entry = try parse_map_entry(alloc, m);
-    //     soil_to_fertilizer = TreeNode.init(entry);
-    // }
     while (true) {
         const msg = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
         if (msg) |m| {
             if (m.len > 0) {
                 const entry = try parse_map_entry(alloc, m);
                 try soil_to_fertilizer.add(entry);
-                // const node = try alloc.create(TreeNode);
-                // errdefer alloc.destroy(node);
-                // node.* = TreeNode.init(entry);
-                // soil_to_fertilizer.add_leaf(node);
             } else break;
         } else break;
     }
@@ -362,21 +344,12 @@ fn run() !void {
     _ = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
 
     var fertilizer_to_water = Tree.init(alloc);
-    // const fertilizer_to_water_first = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
-    // if (fertilizer_to_water_first) |m| {
-    //     const entry = try parse_map_entry(alloc, m);
-    //     fertilizer_to_water = TreeNode.init(entry);
-    // }
     while (true) {
         const msg = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
         if (msg) |m| {
             if (m.len > 0) {
                 const entry = try parse_map_entry(alloc, m);
                 try fertilizer_to_water.add(entry);
-                // const node = try alloc.create(TreeNode);
-                // errdefer alloc.destroy(node);
-                // node.* = TreeNode.init(entry);
-                // fertilizer_to_water.add_leaf(node);
             } else break;
         } else break;
     }
@@ -385,21 +358,12 @@ fn run() !void {
     _ = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
 
     var water_to_light = Tree.init(alloc);
-    // const water_to_light_first = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
-    // if (water_to_light_first) |m| {
-    //     const entry = try parse_map_entry(alloc, m);
-    //     water_to_light = TreeNode.init(entry);
-    // }
     while (true) {
         const msg = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
         if (msg) |m| {
             if (m.len > 0) {
                 const entry = try parse_map_entry(alloc, m);
                 try water_to_light.add(entry);
-                // const node = try alloc.create(TreeNode);
-                // errdefer alloc.destroy(node);
-                // node.* = TreeNode.init(entry);
-                // water_to_light.add_leaf(node);
             } else break;
         } else break;
     }
@@ -408,21 +372,12 @@ fn run() !void {
     _ = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
 
     var light_to_temperature = Tree.init(alloc);
-    // const light_to_temperature_first = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
-    // if (light_to_temperature_first) |m| {
-    //     const entry = try parse_map_entry(alloc, m);
-    //     light_to_temperature = TreeNode.init(entry);
-    // }
     while (true) {
         const msg = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
         if (msg) |m| {
             if (m.len > 0) {
                 const entry = try parse_map_entry(alloc, m);
                 try light_to_temperature.add(entry);
-                // const node = try alloc.create(TreeNode);
-                // errdefer alloc.destroy(node);
-                // node.* = TreeNode.init(entry);
-                // light_to_temperature.add_leaf(node);
             } else break;
         } else break;
     }
@@ -431,21 +386,12 @@ fn run() !void {
     _ = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
 
     var temperature_to_humidity = Tree.init(alloc);
-    // const temperature_to_humidity_first = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
-    // if (temperature_to_humidity_first) |m| {
-    //     const entry = try parse_map_entry(alloc, m);
-    //     temperature_to_humidity = TreeNode.init(entry);
-    // }
     while (true) {
         const msg = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
         if (msg) |m| {
             if (m.len > 0) {
                 const entry = try parse_map_entry(alloc, m);
                 try temperature_to_humidity.add(entry);
-                // const node = try alloc.create(TreeNode);
-                // errdefer alloc.destroy(node);
-                // node.* = TreeNode.init(entry);
-                // temperature_to_humidity.add_leaf(node);
             } else break;
         } else break;
     }
@@ -454,21 +400,12 @@ fn run() !void {
     _ = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
 
     var humidity_to_location = Tree.init(alloc);
-    // const humidity_to_location_first = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
-    // if (humidity_to_location_first) |m| {
-    //     const entry = try parse_map_entry(alloc, m);
-    //     humidity_to_location = TreeNode.init(entry);
-    // }
     while (true) {
         const msg = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
         if (msg) |m| {
             if (m.len > 0) {
                 const entry = try parse_map_entry(alloc, m);
                 try humidity_to_location.add(entry);
-                // const node = try alloc.create(TreeNode);
-                // errdefer alloc.destroy(node);
-                // node.* = TreeNode.init(entry);
-                // humidity_to_location.add_leaf(node);
             } else break;
         } else break;
     }
