@@ -55,6 +55,10 @@ const Card = enum(u8) {
     fn print(self: Card) void {
         std.debug.print("{c}", .{self.toChar()});
     }
+
+    fn cardLessThan(_: void, a: Card, b: Card) bool {
+        return @intFromEnum(a) > @intFromEnum(b);
+    }
 };
 
 test "camel card" {
@@ -62,57 +66,55 @@ test "camel card" {
     try std.testing.expect(@intFromEnum(try Card.fromChar('T')) == 10);
 }
 
-const Hand = struct {
-    cards: [5]Card,
-    size: usize,
+fn Hand(comptime T: type) type {
+    return struct {
+        cards: [5]T,
+        size: usize,
 
-    fn init() Hand {
-        return Hand{
-            .cards = undefined,
-            .size = 0,
-        };
-    }
-
-    fn parse(cards: []const u8) !Hand {
-        var h = Hand.init();
-        for (cards) |c| {
-            const card = try Card.fromChar(c);
-            try h.add(card);
+        fn init() Hand(T) {
+            return Hand(T){
+                .cards = undefined,
+                .size = 0,
+            };
         }
-        return h;
-    }
 
-    fn add(self: *Hand, card: Card) !void {
-        if (self.size >= 5) return error.HandFull;
-        self.cards[self.size] = card;
-        self.size += 1;
-    }
-
-    fn sort(self: *Hand) void {
-        std.mem.sort(Card, self.cards[0..self.size], {}, comptime cardLessThan);
-    }
-
-    fn toString(self: Hand) []u8 {
-        var result: [5]u8 = undefined;
-        for (self.cards[0..self.size], 0..) |c, i| {
-            result[i] = c.toChar();
+        fn parse(cards: []const u8) !Hand(T) {
+            var h = Hand(T).init();
+            for (cards) |c| {
+                const card = try T.fromChar(c);
+                try h.add(card);
+            }
+            return h;
         }
-        return result[0..self.size];
-    }
 
-    fn print(self: Hand) void {
-        for (self.cards[0..self.size]) |card| {
-            card.print();
+        fn add(self: *Hand(T), card: T) !void {
+            if (self.size >= 5) return error.HandFull;
+            self.cards[self.size] = card;
+            self.size += 1;
         }
-    }
-};
 
-fn cardLessThan(_: void, a: Card, b: Card) bool {
-    return @intFromEnum(a) > @intFromEnum(b);
+        fn sort(self: *Hand(T)) void {
+            std.mem.sort(T, self.cards[0..self.size], {}, comptime T.cardLessThan);
+        }
+
+        fn toString(self: Hand(T)) []u8 {
+            var result: [5]u8 = undefined;
+            for (self.cards[0..self.size], 0..) |c, i| {
+                result[i] = c.toChar();
+            }
+            return result[0..self.size];
+        }
+
+        fn print(self: Hand(T)) void {
+            for (self.cards[0..self.size]) |card| {
+                card.print();
+            }
+        }
+    };
 }
 
 test "hand" {
-    var h = Hand.init();
+    var h = Hand(Card).init();
     try h.add(Card.two);
     try h.add(Card.ten);
     try h.add(Card.four);
@@ -133,7 +135,7 @@ test "hand parsing" {
     };
 
     for (testCases) |tc| {
-        var hand = try Hand.parse(tc.input);
+        var hand = try Hand(Card).parse(tc.input);
         hand.print();
         hand.sort();
         const result = hand.toString();
@@ -154,7 +156,7 @@ const HandRank = enum(u8) {
 const HandStrength = struct {
     rank: HandRank,
 
-    fn eval(hand: Hand) HandStrength {
+    fn eval(hand: Hand(Card)) HandStrength {
         var rank_counts: [15]u8 = [_]u8{0} ** 15;
 
         for (hand.cards[0..hand.size]) |card| {
@@ -205,13 +207,13 @@ test "hand strength" {
 
     for (testCases) |tc| {
         std.debug.print("Testing {s}\n", .{tc.input});
-        const hand = try Hand.parse(tc.input);
+        const hand = try Hand(Card).parse(tc.input);
         const strength = HandStrength.eval(hand);
         try std.testing.expectEqual(tc.expected, strength.rank);
     }
 }
 
-fn handLessThan(_: void, a: Hand, b: Hand) bool {
+fn handLessThan(_: void, a: Hand(Card), b: Hand(Card)) bool {
     const rank_a = HandStrength.eval(a).rank;
     const rank_b = HandStrength.eval(b).rank;
     // std.debug.print("Compare {} and {}\n", .{ rank_a, rank_b });
@@ -230,27 +232,27 @@ fn handLessThan(_: void, a: Hand, b: Hand) bool {
 
 test "compare strength" {
     {
-        const a = try Hand.parse("22345");
-        const b = try Hand.parse("22335");
+        const a = try Hand(Card).parse("22345");
+        const b = try Hand(Card).parse("22335");
         try std.testing.expect(handLessThan({}, a, b));
     }
     {
-        const a = try Hand.parse("22335");
-        const b = try Hand.parse("22344");
+        const a = try Hand(Card).parse("22335");
+        const b = try Hand(Card).parse("22344");
         try std.testing.expect(handLessThan({}, a, b));
     }
 }
 
 const TreeNode = struct {
-    hand: Hand,
+    hand: Hand(Card),
     left: ?*TreeNode = null,
     right: ?*TreeNode = null,
 
-    fn init(hand: Hand) TreeNode {
+    fn init(hand: Hand(Card)) TreeNode {
         return TreeNode{ .hand = hand };
     }
 
-    fn add(self: *TreeNode, alloc: std.mem.Allocator, hand: Hand) !void {
+    fn add(self: *TreeNode, alloc: std.mem.Allocator, hand: Hand(Card)) !void {
         const node = try alloc.create(TreeNode);
         errdefer alloc.destroy(node);
         node.* = TreeNode.init(hand);
@@ -299,7 +301,7 @@ const Tree = struct {
         };
     }
 
-    fn add(self: *Tree, hand: Hand) !void {
+    fn add(self: *Tree, hand: Hand(Card)) !void {
         if (self.root == null) {
             self.root = try self.alloc.create(TreeNode);
             self.root.?.* = TreeNode.init(hand);
@@ -315,17 +317,17 @@ const Tree = struct {
 
 const Game = struct {
     alloc: std.mem.Allocator,
-    all: std.AutoHashMap(Hand, usize),
+    all: std.AutoHashMap(Hand(Card), usize),
     tree: Tree,
 
     fn init(alloc: std.mem.Allocator) Game {
-        const all = std.AutoHashMap(Hand, usize).init(alloc);
+        const all = std.AutoHashMap(Hand(Card), usize).init(alloc);
         const tree = Tree.init(alloc);
         return .{ .alloc = alloc, .all = all, .tree = tree };
     }
 
     fn add(self: *Game, hand: []const u8, bid: usize) !void {
-        const h = try Hand.parse(hand);
+        const h = try Hand(Card).parse(hand);
         try self.all.put(h, bid);
         try self.tree.add(h);
     }
