@@ -66,6 +66,73 @@ test "camel card" {
     try std.testing.expect(@intFromEnum(try Card.fromChar('T')) == 10);
 }
 
+const JCard = enum(u8) {
+    joker = 1,
+    two = 2,
+    three = 3,
+    four = 4,
+    five = 5,
+    six = 6,
+    seven = 7,
+    eight = 8,
+    nine = 9,
+    ten = 10,
+    queen = 12,
+    king = 13,
+    ace = 14,
+
+    fn fromChar(c: u8) !JCard {
+        return switch (c) {
+            'A' => .ace,
+            '2' => .two,
+            '3' => .three,
+            '4' => .four,
+            '5' => .five,
+            '6' => .six,
+            '7' => .seven,
+            '8' => .eight,
+            '9' => .nine,
+            'T' => .ten,
+            'J' => .joker,
+            'Q' => .queen,
+            'K' => .king,
+            else => error.InvalidCard,
+        };
+    }
+
+    fn toChar(self: JCard) u8 {
+        return switch (self) {
+            .ace => 'A',
+            .two => '2',
+            .three => '3',
+            .four => '4',
+            .five => '5',
+            .six => '6',
+            .seven => '7',
+            .eight => '8',
+            .nine => '9',
+            .ten => 'T',
+            .joker => 'J',
+            .queen => 'Q',
+            .king => 'K',
+        };
+    }
+
+    fn print(self: JCard) void {
+        std.debug.print("{c}", .{self.toChar()});
+    }
+
+    fn cardLessThan(_: void, a: JCard, b: JCard) bool {
+        return @intFromEnum(a) > @intFromEnum(b);
+    }
+};
+
+test "camel card with joker" {
+    try std.testing.expect(@intFromEnum(JCard.joker) == 1);
+    try std.testing.expect(@intFromEnum(JCard.joker) < @intFromEnum(JCard.two));
+    try std.testing.expect(@intFromEnum(try JCard.fromChar('J')) == 1);
+}
+
 fn Hand(comptime T: type) type {
     return struct {
         cards: [5]T,
@@ -125,6 +192,18 @@ test "hand" {
     try std.testing.expect(std.mem.eql(Card, &h.cards, &[_]Card{ Card.ace, Card.queen, Card.ten, Card.four, Card.two }));
 }
 
+test "hand with joker" {
+    var h = Hand(JCard).init();
+    try h.add(JCard.two);
+    try h.add(JCard.joker);
+    try h.add(JCard.four);
+    try h.add(JCard.queen);
+    try h.add(JCard.ace);
+    try std.testing.expect(std.mem.eql(JCard, &h.cards, &[_]JCard{ JCard.two, JCard.joker, JCard.four, JCard.queen, JCard.ace }));
+    h.sort();
+    try std.testing.expect(std.mem.eql(JCard, &h.cards, &[_]JCard{ JCard.ace, JCard.queen, JCard.four, JCard.two, JCard.joker }));
+}
+
 test "hand parsing" {
     const testCases = [_]struct { input: []const u8, expected: []const u8 }{
         .{ .input = "23456", .expected = "65432" },
@@ -136,6 +215,24 @@ test "hand parsing" {
 
     for (testCases) |tc| {
         var hand = try Hand(Card).parse(tc.input);
+        hand.print();
+        hand.sort();
+        const result = hand.toString();
+        try std.testing.expect(std.mem.eql(u8, tc.expected, result));
+    }
+}
+
+test "hand parsing with joker" {
+    const testCases = [_]struct { input: []const u8, expected: []const u8 }{
+        .{ .input = "23456", .expected = "65432" },
+        .{ .input = "AKQJT", .expected = "AKQTJ" },
+        .{ .input = "A2345", .expected = "A5432" },
+        .{ .input = "KKKKJ", .expected = "KKKKJ" },
+        .{ .input = "A23J4", .expected = "A432J" },
+    };
+
+    for (testCases) |tc| {
+        var hand = try Hand(JCard).parse(tc.input);
         hand.print();
         hand.sort();
         const result = hand.toString();
@@ -192,6 +289,23 @@ const HandStrength = struct {
 
         return .{ .rank = HandRank.highCard };
     }
+
+    fn handLessThan(_: void, a: Hand(Card), b: Hand(Card)) bool {
+        const rank_a = HandStrength.eval(a).rank;
+        const rank_b = HandStrength.eval(b).rank;
+        // std.debug.print("Compare {} and {}\n", .{ rank_a, rank_b });
+        const val_b = @intFromEnum(rank_b);
+        const val_a = @intFromEnum(rank_a);
+        if (val_a != val_b) {
+            return val_b > val_a;
+        }
+        for (0..5) |i| {
+            if (a.cards[i] != b.cards[i]) {
+                return @intFromEnum(b.cards[i]) > @intFromEnum(a.cards[i]);
+            }
+        }
+        return false;
+    }
 };
 
 test "hand strength" {
@@ -213,153 +327,323 @@ test "hand strength" {
     }
 }
 
-fn handLessThan(_: void, a: Hand(Card), b: Hand(Card)) bool {
-    const rank_a = HandStrength.eval(a).rank;
-    const rank_b = HandStrength.eval(b).rank;
-    // std.debug.print("Compare {} and {}\n", .{ rank_a, rank_b });
-    const val_b = @intFromEnum(rank_b);
-    const val_a = @intFromEnum(rank_a);
-    if (val_a != val_b) {
-        return val_b > val_a;
-    }
-    for (0..5) |i| {
-        if (a.cards[i] != b.cards[i]) {
-            return @intFromEnum(b.cards[i]) > @intFromEnum(a.cards[i]);
-        }
-    }
-    return false;
-}
-
 test "compare strength" {
     {
         const a = try Hand(Card).parse("22345");
         const b = try Hand(Card).parse("22335");
-        try std.testing.expect(handLessThan({}, a, b));
+        try std.testing.expect(HandStrength.handLessThan({}, a, b));
     }
     {
         const a = try Hand(Card).parse("22335");
         const b = try Hand(Card).parse("22344");
-        try std.testing.expect(handLessThan({}, a, b));
+        try std.testing.expect(HandStrength.handLessThan({}, a, b));
     }
 }
 
-const TreeNode = struct {
-    hand: Hand(Card),
-    left: ?*TreeNode = null,
-    right: ?*TreeNode = null,
+const JHandStrength = struct {
+    rank: HandRank,
 
-    fn init(hand: Hand(Card)) TreeNode {
-        return TreeNode{ .hand = hand };
-    }
+    fn eval(hand: Hand(JCard)) HandStrength {
+        var rank_counts: [15]u8 = [_]u8{0} ** 15;
 
-    fn add(self: *TreeNode, alloc: std.mem.Allocator, hand: Hand(Card)) !void {
-        const node = try alloc.create(TreeNode);
-        errdefer alloc.destroy(node);
-        node.* = TreeNode.init(hand);
-        self.add_leaf(node);
-    }
-
-    fn add_leaf(self: *TreeNode, other: *TreeNode) void {
-        if (handLessThan({}, self.hand, other.hand)) {
-            if (self.right) |right| {
-                right.add_leaf(other);
+        var jokers: u8 = 0;
+        for (hand.cards[0..hand.size]) |card| {
+            if (card == JCard.joker) {
+                jokers += 1;
             } else {
-                self.right = other;
+                rank_counts[@intFromEnum(card)] += 1;
             }
+        }
+
+        var pairs: u8 = 0;
+        var three_of_a_kind: bool = false;
+        var four_of_a_kind: bool = false;
+        var five_of_a_kind: bool = false;
+
+        for (rank_counts) |count| {
+            if (count == 2) {
+                pairs += 1;
+            }
+            if (count == 3) {
+                three_of_a_kind = true;
+            }
+            if (count == 4) {
+                four_of_a_kind = true;
+            }
+            if (count == 5) {
+                five_of_a_kind = true;
+            }
+        }
+
+        if (jokers == 5) {
+            return .{ .rank = HandRank.fiveOfAKind };
+        } else if (jokers == 4) {
+            return .{ .rank = HandRank.fiveOfAKind };
+        }
+        if (five_of_a_kind) return .{ .rank = HandRank.fiveOfAKind };
+        if (four_of_a_kind) {
+            if (jokers == 1) {
+                return .{ .rank = HandRank.fiveOfAKind };
+            } else {
+                return .{ .rank = HandRank.fourOfAKind };
+            }
+        }
+        if (three_of_a_kind and jokers == 2) {
+            return .{ .rank = HandRank.fiveOfAKind };
+        }
+        if (jokers == 3) {
+            if (pairs == 1) {
+                return .{ .rank = HandRank.fiveOfAKind };
+            } else {
+                return .{ .rank = HandRank.fourOfAKind };
+            }
+        }
+        if (three_of_a_kind and pairs == 1) {
+            return .{ .rank = HandRank.fullHouse };
+        }
+        if (three_of_a_kind) {
+            if (jokers == 1) {
+                return .{ .rank = HandRank.fourOfAKind };
+            } else {
+                return .{ .rank = HandRank.threeOfAKind };
+            }
+        }
+        if (pairs == 2) {
+            if (jokers == 1) {
+                return .{ .rank = HandRank.fullHouse };
+            } else {
+                return .{ .rank = HandRank.twoPairs };
+            }
+        }
+        if (pairs == 1) {
+            if (jokers == 3) {
+                return .{ .rank = HandRank.fiveOfAKind };
+            } else if (jokers == 2) {
+                return .{ .rank = HandRank.fourOfAKind };
+            } else if (jokers == 1) {
+                return .{ .rank = HandRank.threeOfAKind };
+            } else {
+                return .{ .rank = HandRank.onePair };
+            }
+        }
+        if (jokers == 2) {
+            return .{ .rank = HandRank.threeOfAKind };
+        } else if (jokers == 1) {
+            return .{ .rank = HandRank.onePair };
         } else {
-            if (self.left) |left| {
-                left.add_leaf(other);
-            } else {
-                self.left = other;
-            }
+            return .{ .rank = HandRank.highCard };
         }
     }
 
-    fn print(self: TreeNode) void {
-        std.debug.print("Node: ", .{});
-        self.hand.print();
-        std.debug.print("\n", .{});
-        if (self.left) |left| {
-            std.debug.print("Left: \n", .{});
-            left.print();
+    fn handLessThan(_: void, a: Hand(JCard), b: Hand(JCard)) bool {
+        const rank_a = JHandStrength.eval(a).rank;
+        const rank_b = JHandStrength.eval(b).rank;
+        // std.debug.print("Compare {} and {}\n", .{ rank_a, rank_b });
+        const val_b = @intFromEnum(rank_b);
+        const val_a = @intFromEnum(rank_a);
+        if (val_a != val_b) {
+            return val_b > val_a;
         }
-        if (self.right) |right| {
-            std.debug.print("Right: \n", .{});
-            right.print();
+        for (0..5) |i| {
+            if (a.cards[i] != b.cards[i]) {
+                return @intFromEnum(b.cards[i]) > @intFromEnum(a.cards[i]);
+            }
         }
+        return false;
     }
 };
 
-const Tree = struct {
-    alloc: std.mem.Allocator,
-    root: ?*TreeNode,
+test "hand strength with joker" {
+    const testCases = [_]struct { input: []const u8, expected: HandRank }{
+        .{ .input = "22345", .expected = .onePair },
+        .{ .input = "A3323", .expected = .threeOfAKind },
+        .{ .input = "54KK5", .expected = .twoPairs },
+        .{ .input = "44KK4", .expected = .fullHouse },
+        .{ .input = "KJJJJ", .expected = .fiveOfAKind },
+        .{ .input = "AAAAA", .expected = .fiveOfAKind },
+        .{ .input = "AKQJ9", .expected = .onePair },
+        .{ .input = "32T3K", .expected = .onePair },
+        .{ .input = "T55J5", .expected = .fourOfAKind },
+        .{ .input = "KK677", .expected = .twoPairs },
+        .{ .input = "KTJJT", .expected = .fourOfAKind },
+        .{ .input = "QQQJA", .expected = .fourOfAKind },
+        .{ .input = "3JJ33", .expected = .fiveOfAKind },
+        .{ .input = "6J84Q", .expected = .onePair },
+        .{ .input = "K4JJJ", .expected = .fourOfAKind },
+        .{ .input = "JJJJJ", .expected = .fiveOfAKind },
+        .{ .input = "KKKJJ", .expected = .fiveOfAKind },
+        .{ .input = "KK34J", .expected = .threeOfAKind },
+        .{ .input = "KJ34J", .expected = .threeOfAKind },
+        .{ .input = "JJTTJ", .expected = .fiveOfAKind },
+    };
 
-    fn init(alloc: std.mem.Allocator) Tree {
-        return .{
-            .alloc = alloc,
-            .root = null,
+    for (testCases) |tc| {
+        std.debug.print("Testing {s}\n", .{tc.input});
+        const hand = try Hand(JCard).parse(tc.input);
+        const strength = JHandStrength.eval(hand);
+        try std.testing.expectEqual(tc.expected, strength.rank);
+    }
+}
+
+test "compare strength with joker" {
+    {
+        const testCases = [_]struct { a: []const u8, b: []const u8 }{
+            .{ .a = "JJJJJ", .b = "22222" },
+            .{ .a = "22222", .b = "33333" },
+            .{ .a = "22322", .b = "JJ3JJ" },
+            .{ .a = "JJ3JJ", .b = "33333" },
+            .{ .a = "44342", .b = "JJ3J2" },
+            .{ .a = "JJ3J2", .b = "33332" },
         };
-    }
-
-    fn add(self: *Tree, hand: Hand(Card)) !void {
-        if (self.root == null) {
-            self.root = try self.alloc.create(TreeNode);
-            self.root.?.* = TreeNode.init(hand);
-        } else {
-            try self.root.?.add(self.alloc, hand);
+        for (testCases) |tc| {
+            const a = try Hand(JCard).parse(tc.a);
+            const b = try Hand(JCard).parse(tc.b);
+            try std.testing.expect(JHandStrength.handLessThan({}, a, b));
         }
     }
+}
 
-    fn print(self: Tree) void {
-        if (self.root != null) self.root.?.print();
-    }
-};
+fn TreeNode(comptime T: type, comptime S: type) type {
+    return struct {
+        hand: Hand(T),
+        left: ?*TreeNode(T, S) = null,
+        right: ?*TreeNode(T, S) = null,
 
-const Game = struct {
-    alloc: std.mem.Allocator,
-    all: std.AutoHashMap(Hand(Card), usize),
-    tree: Tree,
-
-    fn init(alloc: std.mem.Allocator) Game {
-        const all = std.AutoHashMap(Hand(Card), usize).init(alloc);
-        const tree = Tree.init(alloc);
-        return .{ .alloc = alloc, .all = all, .tree = tree };
-    }
-
-    fn add(self: *Game, hand: []const u8, bid: usize) !void {
-        const h = try Hand(Card).parse(hand);
-        try self.all.put(h, bid);
-        try self.tree.add(h);
-    }
-
-    fn eval(self: Game) usize {
-        var idx: usize = 0;
-        return self.inner_eval(self.tree.root.?, &idx);
-    }
-
-    fn inner_eval(self: Game, node: *TreeNode, idx: *usize) usize {
-        var result: usize = 0;
-        if (node.left) |left| {
-            result += self.inner_eval(left, idx);
+        fn init(hand: Hand(T)) TreeNode(T, S) {
+            return TreeNode(T, S){ .hand = hand };
         }
-        idx.* += 1;
-        // const hand = node.hand.toString();
-        // std.debug.print("Eval: {}=>{s}\n", .{ idx.*, hand });
-        const inner = idx.* * self.all.get(node.hand).?;
-        result += inner;
-        if (node.right) |right| {
-            result += self.inner_eval(right, idx);
+
+        fn add(self: *TreeNode(T, S), alloc: std.mem.Allocator, hand: Hand(T)) !void {
+            const node = try alloc.create(TreeNode(T, S));
+            errdefer alloc.destroy(node);
+            node.* = TreeNode(T, S).init(hand);
+            self.add_leaf(node);
         }
-        return result;
-    }
-};
+
+        fn add_leaf(self: *TreeNode(T, S), other: *TreeNode(T, S)) void {
+            if (S.handLessThan({}, self.hand, other.hand)) {
+                if (self.right) |right| {
+                    right.add_leaf(other);
+                } else {
+                    self.right = other;
+                }
+            } else {
+                if (self.left) |left| {
+                    left.add_leaf(other);
+                } else {
+                    self.left = other;
+                }
+            }
+        }
+
+        fn print(self: TreeNode(T, S)) void {
+            std.debug.print("Node: ", .{});
+            self.hand.print();
+            std.debug.print("\n", .{});
+            if (self.left) |left| {
+                std.debug.print("Left: \n", .{});
+                left.print();
+            }
+            if (self.right) |right| {
+                std.debug.print("Right: \n", .{});
+                right.print();
+            }
+        }
+    };
+}
+
+fn Tree(comptime T: type, comptime S: type) type {
+    return struct {
+        alloc: std.mem.Allocator,
+        root: ?*TreeNode(T, S),
+
+        fn init(alloc: std.mem.Allocator) Tree(T, S) {
+            return .{
+                .alloc = alloc,
+                .root = null,
+            };
+        }
+
+        fn add(self: *Tree(T, S), hand: Hand(T)) !void {
+            if (self.root == null) {
+                self.root = try self.alloc.create(TreeNode(T, S));
+                self.root.?.* = TreeNode(T, S).init(hand);
+            } else {
+                try self.root.?.add(self.alloc, hand);
+            }
+        }
+
+        fn print(self: Tree(T, S)) void {
+            if (self.root != null) self.root.?.print();
+        }
+    };
+}
+
+fn Game(comptime T: type, comptime S: type) type {
+    return struct {
+        alloc: std.mem.Allocator,
+        all: std.AutoHashMap(Hand(T), usize),
+        tree: Tree(T, S),
+
+        fn init(alloc: std.mem.Allocator) Game(T, S) {
+            const all = std.AutoHashMap(Hand(T), usize).init(alloc);
+            const tree = Tree(T, S).init(alloc);
+            return .{ .alloc = alloc, .all = all, .tree = tree };
+        }
+
+        fn add(self: *Game(T, S), hand: []const u8, bid: usize) !void {
+            const h = try Hand(T).parse(hand);
+            try self.all.put(h, bid);
+            try self.tree.add(h);
+        }
+
+        fn eval(self: Game(T, S)) usize {
+            var idx: usize = 0;
+            return self.inner_eval(self.tree.root.?, &idx);
+        }
+
+        fn inner_eval(self: Game(T, S), node: *TreeNode(T, S), idx: *usize) usize {
+            var result: usize = 0;
+            if (node.left) |left| {
+                result += self.inner_eval(left, idx);
+            }
+            idx.* += 1;
+            // std.debug.print("Eval: {}=>", .{idx.*});
+            // node.hand.print();
+            // std.debug.print("\n", .{});
+            const inner = idx.* * self.all.get(node.hand).?;
+            result += inner;
+            if (node.right) |right| {
+                result += self.inner_eval(right, idx);
+            }
+            return result;
+        }
+    };
+}
 
 test "game" {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
 
-    var game = Game.init(alloc);
+    var game = Game(Card, HandStrength).init(alloc);
+    try game.add("32T3K", 765);
+    try game.add("T55J5", 684);
+    try game.add("KK677", 28);
+    try game.add("KTJJT", 220);
+    try game.add("QQQJA", 483);
+
+    game.tree.print();
+
+    std.debug.print("Result: {}\n", .{game.eval()});
+}
+
+test "game with joker" {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var game = Game(JCard, JHandStrength).init(alloc);
     try game.add("32T3K", 765);
     try game.add("T55J5", 684);
     try game.add("KK677", 28);
@@ -399,18 +683,21 @@ fn run() !void {
     const alloc = arena.allocator();
 
     var msg_buf: [4096]u8 = undefined;
-    var game = Game.init(alloc);
+    var game1 = Game(Card, HandStrength).init(alloc);
+    var game2 = Game(JCard, JHandStrength).init(alloc);
     while (true) {
         const msg = try r.readUntilDelimiterOrEof(&msg_buf, '\n');
         if (msg) |m| {
             if (m.len > 0) {
                 const entry = try parse_entry(m);
-                try game.add(entry.hand, entry.bid);
+                try game1.add(entry.hand, entry.bid);
+                try game2.add(entry.hand, entry.bid);
             } else break;
         } else break;
     }
 
-    std.debug.print("Result: {}\n", .{game.eval()});
+    std.debug.print("Result part 1: {}\n", .{game1.eval()});
+    std.debug.print("Result part 2: {}\n", .{game2.eval()});
 }
 
 pub fn main() !void {
