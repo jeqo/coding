@@ -216,156 +216,177 @@ test "hll basic int" {
     }
 }
 
-pub fn HyperLogLogPresto(comptime T: type, comptime leading_bits: u16) type { //leading_bits
-    return struct {
-        const Self = @This();
-
-        const CONSTANT: f64 = 0.79402;
-        const DENSE_BUCKET_SIZE: usize = 4;
-        const OVERFLOW_BUCKET_SIZE: usize = 3;
-
-        // dense_bucket: std.ArrayList(std.bit_set.StaticBitSet(DENSE_BUCKET_SIZE)),
-        cardinality: u64 = 0,
-
-        pub fn init() Self {
-            return .{};
+fn trailing_zeroes(bitset: std.bit_set.StaticBitSet(64)) u64 {
+    var z: u64 = 0;
+    for (0..64) |i| {
+        if (bitset.isSet(63 - i)) {
+            return z;
         }
-
-        pub fn get_cardinality(self: Self) u64 {
-            return self.cardinality;
-        }
-
-        pub fn add_element(self: *Self, elem: T) void {
-            const hash = self.calculate_hash(elem);
-            const bin = compute_binary(hash);
-            const b = extract_first_n_bits(leading_bits, bin);
-            std.debug.print("Leading bits: {}\n", .{b});
-            // const r = self.register[b];
-            // const p = position_of_leftmost_one(initial_bits, bin);
-            // // std.debug.print("Adding: {any}, hash={}, b={}, p={}\n", .{ elem, hash, b, p });
-            // self.register[b] = @max(r, p);
-        }
-
-        pub fn compute_cardinality(_: *Self) void {
-            // var sum: f64 = 0;
-            // for (self.register) |r| {
-            //     const exponent = @as(f64, @floatFromInt(r));
-            //     sum += std.math.pow(f64, 2.0, -exponent);
-            // }
-            // const m = @as(f64, capacity);
-            // const h_mean = (1 / sum);
-            // const c = CONSTANT * m * m * h_mean;
-            // self.cardinality = @intFromFloat(std.math.floor(c));
-        }
-
-        fn calculate_hash(_: Self, elem: T) Hash {
-            if (@TypeOf(elem) == []const u8) {
-                return hash_bytes(elem);
-            }
-            if (@TypeOf(elem) == i64) {
-                return @intCast(elem);
-            }
-            return 0;
-        }
-    };
-}
-
-test "hll presto basic string" {
-    var hll = HyperLogLogPresto([]const u8, 2).init();
-    try testing.expectEqual(0, hll.get_cardinality());
-
-    hll.add_element(&null_terminated_bytes("Welcome to CMU DB (15-445/645)"));
-    hll.compute_cardinality();
-    try testing.expectEqual(3, hll.get_cardinality());
-
-    for (0..10) |i| {
-        hll.add_element(&null_terminated_bytes("Andy"));
-        hll.add_element(&null_terminated_bytes("Connor"));
-        hll.add_element(&null_terminated_bytes("J-How"));
-        hll.add_element(&null_terminated_bytes("Kunle"));
-        hll.add_element(&null_terminated_bytes("Lan"));
-        hll.add_element(&null_terminated_bytes("Prashanth"));
-        hll.add_element(&null_terminated_bytes("William"));
-        hll.add_element(&null_terminated_bytes("Yash"));
-        hll.add_element(&null_terminated_bytes("Yuanxin"));
-        if (i == 0) {
-            hll.compute_cardinality();
-            try testing.expectEqual(4, hll.get_cardinality());
-        }
+        z += 1;
     }
+    return z;
 }
 
-test "hll presto basic int" {
-    var hll = HyperLogLog(i64, 1).init();
-    try testing.expectEqual(0, hll.get_cardinality());
-
-    hll.add_element(262144);
-    hll.compute_cardinality();
-    try testing.expectEqual(3, hll.get_cardinality());
-
-    // auto expected1 = obj.GetDenseBucket();
-    // ASSERT_EQ(2ULL, expected1[0].to_ullong());
-    // ASSERT_EQ(1, obj.GetOverflowBucketofIndex(0).to_ullong());
-
-    hll.add_element(0);
-    hll.compute_cardinality();
-    try testing.expectEqual(3, hll.get_cardinality());
-
-    // auto expected2 = obj.GetDenseBucket();
-    // ASSERT_EQ(15UL, expected2[0].to_ulong());
-    // ASSERT_EQ(3, obj.GetOverflowBucketofIndex(0).to_ullong());
-
-    // obj.AddElem(-9151314442816847872L);
-    // obj.ComputeCardinality();
-    // ans = obj.GetCardinality();
-
-    // ASSERT_EQ(ans, 227086569448168320UL);
-
-    // auto expected3 = obj.GetDenseBucket();
-    // ASSERT_EQ(8, expected3[1].to_ullong());
-    // ASSERT_EQ(3, obj.GetOverflowBucketofIndex(0).to_ullong());
-
-    // obj.AddElem(-1);
-
-    // obj.ComputeCardinality();
-    // ans = obj.GetCardinality();
-
-    // ASSERT_EQ(ans, 227086569448168320);
-    // auto expected4 = obj.GetDenseBucket();
-    // ASSERT_EQ(8, expected4[1].to_ullong());
-
-    // obj.AddElem(INT64_MIN);
-    // obj.ComputeCardinality();
-    // ans = obj.GetCardinality();
-
-    // ASSERT_EQ(ans, 14647083729406857216UL);
-    // auto expected5 = obj.GetDenseBucket();
-    // ASSERT_EQ(15UL, expected5[1].to_ulong());
+test "trailing zeroes" {
+    const hash: u64 = hash_bytes(&null_terminated_bytes("Andy"));
+    const bitset = compute_binary(hash);
+    // 0000000000000000000000000000000000001110001001101001111100100000
+    try testing.expectEqual(5, trailing_zeroes(bitset));
 }
 
-test "hll presto int" {
-    var hll = HyperLogLog(i64, 0).init();
-    try testing.expectEqual(0, hll.get_cardinality());
-
-    // obj.AddElem(65536UL);
-    // ASSERT_EQ(obj.GetDenseBucket()[0].to_ullong(), 0);
-    // ASSERT_EQ(obj.GetOverflowBucketofIndex(0).to_ullong(), 1);
-
-    // obj.AddElem(INT64_MIN);
-    // obj.ComputeCardinality();
-    // ASSERT_EQ(obj.GetDenseBucket()[0].to_ullong(), 15);
-    // ASSERT_EQ(obj.GetOverflowBucketofIndex(0).to_ullong(), 3);
-
-    // obj.AddElem(0);
-    // obj.ComputeCardinality();
-    // ASSERT_EQ(obj.GetCardinality(), 14647083729406857216UL);
-    // ASSERT_EQ(obj.GetDenseBucket()[0].to_ullong(), 0);
-    // ASSERT_EQ(obj.GetOverflowBucketofIndex(0).to_ullong(), 4);
-}
-
-test "hll presto edge case" {
-    // auto obj = HyperLogLogPresto<int64_t>(static_cast<int16_t>(-2));
-    var hll = HyperLogLog(i64, -2).init();
-    hll.compute_cardinality();
-    try testing.expectEqual(0, hll.get_cardinality());
-}
+// haven't got enough specs to implement the presto version
+// pub fn HyperLogLogPresto(comptime T: type, comptime n_leading_bits: u16) type { //leading_bits
+//     return struct {
+//         const Self = @This();
+//
+//         const CONSTANT: f64 = 0.79402;
+//         const DENSE_BUCKET_SIZE: u6 = 4;
+//         const OVERFLOW_BUCKET_SIZE: usize = 3;
+//
+//         buckets: [std.math.pow(usize, 2, n_leading_bits)]usize,
+//         // dense_bucket: std.ArrayList(std.bit_set.StaticBitSet(DENSE_BUCKET_SIZE)),
+//         cardinality: u64 = 0,
+//
+//         pub fn init() Self {
+//             return .{};
+//         }
+//
+//         pub fn get_cardinality(self: Self) u64 {
+//             return self.cardinality;
+//         }
+//
+//         pub fn add_element(self: *Self, elem: T) void {
+//             const hash = self.calculate_hash(elem);
+//             const bin = compute_binary(hash);
+//             const b = extract_first_n_bits(n_leading_bits, bin);
+//             // std.debug.print("Leading bits: {}\n", .{b});
+//             const p = trailing_zeroes(bin);
+//             const over = extract_first_n_bits(DENSE_BUCKET_SIZE, )
+//             // const r = self.register[b];
+//             // // std.debug.print("Adding: {any}, hash={}, b={}, p={}\n", .{ elem, hash, b, p });
+//             // self.register[b] = @max(r, p);
+//         }
+//
+//         pub fn compute_cardinality(_: *Self) void {
+//             // var sum: f64 = 0;
+//             // for (self.register) |r| {
+//             //     const exponent = @as(f64, @floatFromInt(r));
+//             //     sum += std.math.pow(f64, 2.0, -exponent);
+//             // }
+//             // const m = @as(f64, capacity);
+//             // const h_mean = (1 / sum);
+//             // const c = CONSTANT * m * m * h_mean;
+//             // self.cardinality = @intFromFloat(std.math.floor(c));
+//         }
+//
+//         fn calculate_hash(_: Self, elem: T) Hash {
+//             if (@TypeOf(elem) == []const u8) {
+//                 return hash_bytes(elem);
+//             }
+//             if (@TypeOf(elem) == i64) {
+//                 return @intCast(elem);
+//             }
+//             return 0;
+//         }
+//     };
+// }
+//
+// test "hll presto basic string" {
+//     var hll = HyperLogLogPresto([]const u8, 2).init();
+//     try testing.expectEqual(0, hll.get_cardinality());
+//
+//     hll.add_element(&null_terminated_bytes("Welcome to CMU DB (15-445/645)"));
+//     hll.compute_cardinality();
+//     try testing.expectEqual(3, hll.get_cardinality());
+//
+//     for (0..10) |i| {
+//         hll.add_element(&null_terminated_bytes("Andy"));
+//         hll.add_element(&null_terminated_bytes("Connor"));
+//         hll.add_element(&null_terminated_bytes("J-How"));
+//         hll.add_element(&null_terminated_bytes("Kunle"));
+//         hll.add_element(&null_terminated_bytes("Lan"));
+//         hll.add_element(&null_terminated_bytes("Prashanth"));
+//         hll.add_element(&null_terminated_bytes("William"));
+//         hll.add_element(&null_terminated_bytes("Yash"));
+//         hll.add_element(&null_terminated_bytes("Yuanxin"));
+//         if (i == 0) {
+//             hll.compute_cardinality();
+//             try testing.expectEqual(4, hll.get_cardinality());
+//         }
+//     }
+// }
+//
+// test "hll presto basic int" {
+//     var hll = HyperLogLog(i64, 1).init();
+//     try testing.expectEqual(0, hll.get_cardinality());
+//
+//     hll.add_element(262144);
+//     hll.compute_cardinality();
+//     try testing.expectEqual(3, hll.get_cardinality());
+//
+//     // auto expected1 = obj.GetDenseBucket();
+//     // ASSERT_EQ(2ULL, expected1[0].to_ullong());
+//     // ASSERT_EQ(1, obj.GetOverflowBucketofIndex(0).to_ullong());
+//
+//     hll.add_element(0);
+//     hll.compute_cardinality();
+//     try testing.expectEqual(3, hll.get_cardinality());
+//
+//     // auto expected2 = obj.GetDenseBucket();
+//     // ASSERT_EQ(15UL, expected2[0].to_ulong());
+//     // ASSERT_EQ(3, obj.GetOverflowBucketofIndex(0).to_ullong());
+//
+//     // obj.AddElem(-9151314442816847872L);
+//     // obj.ComputeCardinality();
+//     // ans = obj.GetCardinality();
+//
+//     // ASSERT_EQ(ans, 227086569448168320UL);
+//
+//     // auto expected3 = obj.GetDenseBucket();
+//     // ASSERT_EQ(8, expected3[1].to_ullong());
+//     // ASSERT_EQ(3, obj.GetOverflowBucketofIndex(0).to_ullong());
+//
+//     // obj.AddElem(-1);
+//
+//     // obj.ComputeCardinality();
+//     // ans = obj.GetCardinality();
+//
+//     // ASSERT_EQ(ans, 227086569448168320);
+//     // auto expected4 = obj.GetDenseBucket();
+//     // ASSERT_EQ(8, expected4[1].to_ullong());
+//
+//     // obj.AddElem(INT64_MIN);
+//     // obj.ComputeCardinality();
+//     // ans = obj.GetCardinality();
+//
+//     // ASSERT_EQ(ans, 14647083729406857216UL);
+//     // auto expected5 = obj.GetDenseBucket();
+//     // ASSERT_EQ(15UL, expected5[1].to_ulong());
+// }
+//
+// test "hll presto int" {
+//     var hll = HyperLogLog(i64, 0).init();
+//     try testing.expectEqual(0, hll.get_cardinality());
+//
+//     // obj.AddElem(65536UL);
+//     // ASSERT_EQ(obj.GetDenseBucket()[0].to_ullong(), 0);
+//     // ASSERT_EQ(obj.GetOverflowBucketofIndex(0).to_ullong(), 1);
+//
+//     // obj.AddElem(INT64_MIN);
+//     // obj.ComputeCardinality();
+//     // ASSERT_EQ(obj.GetDenseBucket()[0].to_ullong(), 15);
+//     // ASSERT_EQ(obj.GetOverflowBucketofIndex(0).to_ullong(), 3);
+//
+//     // obj.AddElem(0);
+//     // obj.ComputeCardinality();
+//     // ASSERT_EQ(obj.GetCardinality(), 14647083729406857216UL);
+//     // ASSERT_EQ(obj.GetDenseBucket()[0].to_ullong(), 0);
+//     // ASSERT_EQ(obj.GetOverflowBucketofIndex(0).to_ullong(), 4);
+// }
+//
+// test "hll presto edge case" {
+//     // auto obj = HyperLogLogPresto<int64_t>(static_cast<int16_t>(-2));
+//     var hll = HyperLogLog(i64, -2).init();
+//     hll.compute_cardinality();
+//     try testing.expectEqual(0, hll.get_cardinality());
+// }
